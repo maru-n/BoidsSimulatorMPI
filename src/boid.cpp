@@ -12,20 +12,17 @@ Boid::Boid(){
 	Vector3D v;
 	position = p;
 	velocity = v;
-	live = false;
 }
 
 Boid::Boid(Vector3D _p){
 	Vector3D v;
 	position = _p;
 	velocity = v;
-	live = false;
 }
 
 Boid::Boid(Vector3D _p, Vector3D _v){
 	position = _p;
 	velocity = _v;
-	live = false;
 }
 
 bool Boid::isInsideArea(Boid _b, double _sighe_distance, double _sight_angle) {
