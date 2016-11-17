@@ -21,16 +21,6 @@ unsigned int T;
 
 Boid* boids;
 Vector3D *dv;
-unsigned long int timeStep = 0;
-//const unsigned int oneStep = 200000;
-unsigned long int ind = 0;
-
-//std::ofstream ofData;
-//std::ofstream ofParam;
-
-int  dragMouseL = 0;
-int  lastMouseX;
-int  lastMouseY;
 
 bool is_little_endian;
 template <typename T> T fix_byte_order(T value) {
@@ -147,40 +137,14 @@ void update_boids()
         if(boids[i].position.z > FIELD_SIZE) {
             boids[i].position.z = boids[i].position.z - FIELD_SIZE;
         }
-
-        //output data
-        /*
-        if(1-LOGGING && timeStep%outputStep==0){
-            ofData << ind++ << "," << i << " "
-                   << boids[i].position.x * 2.0 - 1.0 << " "
-                   << boids[i].position.y * 2.0 - 1.0 << " "
-                   << boids[i].position.z * 2.0 - 1.0 << " ";
-            if(boids[i].live){
-                ofData << 0;
-            }else{
-                ofData << 1;
-            }
-            ofData << ";\n";
-            if(stopPeriod && ind==10000){
-                exit(0);
-            }
-        }
-         */
     }
-    /*
-    if(LOGGING && timeStep%outputStep==0)
-        susceptability();
-        */
 }
 
 void init(void)
 {
-    //ofData.open(dataFileName.c_str());
-    //ofParam.open(paramFileName.c_str());
-
     std::cout
             << "N = " << N << "\n"
-
+            << "T = " << T << "\n"
             << "#Separation" << "\n"
             << "force: " << COEFF_SEPARATION << "\n"
             << "area distance: " << SIGHT_DISTANCE_SEPARATION << "\n"
