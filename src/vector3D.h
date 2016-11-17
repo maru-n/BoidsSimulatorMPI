@@ -25,10 +25,9 @@ public:
 	Vector3D operator+();
 	Vector3D operator-();
 	
-	double getAbs();
-	Vector3D getUnity();
-	void toUnity();
-	
+	double norm();
+	Vector3D normalized();
+
 	double x;
 	double y;
 	double z;

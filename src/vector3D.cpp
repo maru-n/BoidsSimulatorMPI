@@ -60,22 +60,16 @@ Vector3D Vector3D::operator-(){
 	return Vector3D(-x,-y,-z);
 }
 
-double Vector3D::getAbs(){
+double Vector3D::norm(){
 	double d = x*x + y*y + z*z;
 	return sqrt(d);
 }
 
-Vector3D Vector3D::getUnity(){
+Vector3D Vector3D::normalized(){
 	Vector3D v(x,y,z);
 	//Vector3D v(1,1,1);
-	v /= v.getAbs();
+	v /= v.norm();
 	return v;
-}
-
-void Vector3D::toUnity(){
-	this->x /= (*this).getAbs();
-	this->y /= (*this).getAbs();
-	this->z /= (*this).getAbs();
 }
 
 

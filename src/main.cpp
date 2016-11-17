@@ -85,7 +85,7 @@ void update_boids()
                 // Separation
                 if (boids[i].isInsideSeparationArea(target_boid)) {
                     neivers_num_sep ++;
-                    dv_sep += (boids[i].position - target_boid.position).getUnity();
+                    dv_sep += (boids[i].position - target_boid.position).normalized();
                 }
                 // Alignment
                 if (boids[i].isInsideAlignmentArea(target_boid)) {
@@ -109,10 +109,10 @@ void update_boids()
     for(int i=0; i<N; i++) {
         boids[i].velocity += dv[i];
 
-        if(boids[i].velocity.getAbs()>0. && boids[i].velocity.getAbs()>MAX_VELOCITY){
-            boids[i].velocity = boids[i].velocity.getUnity() * MAX_VELOCITY;
-        }else if(boids[i].velocity.getAbs()>0. && boids[i].velocity.getAbs()<MIN_VELOCITY){
-            boids[i].velocity = boids[i].velocity.getUnity() * MIN_VELOCITY;
+        if(boids[i].velocity.norm()>0. && boids[i].velocity.norm()>MAX_VELOCITY){
+            boids[i].velocity = boids[i].velocity.normalized() * MAX_VELOCITY;
+        }else if(boids[i].velocity.norm()>0. && boids[i].velocity.norm()<MIN_VELOCITY){
+            boids[i].velocity = boids[i].velocity.normalized() * MIN_VELOCITY;
         }
 
         //update boid
