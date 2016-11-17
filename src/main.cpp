@@ -11,7 +11,9 @@
 #include "boid.h"
 #include <iostream>
 #include "parameter.h"
+#include <Eigen/Core>
 
+using Eigen::Vector3d;
 using namespace std;
 
 static const double PI = 6*asin( 0.5 );
@@ -20,7 +22,7 @@ unsigned int N;
 unsigned int T;
 
 Boid* boids;
-Vector3D *dv;
+Vector3d *dv;
 unsigned long int timeStep = 0;
 //const unsigned int oneStep = 200000;
 unsigned long int ind = 0;
@@ -56,33 +58,42 @@ void check_endianness() {
     }
 }
 
+Vector3d dv_coh;
+Vector3d dv_sep;
+Vector3d dv_ali;
+Vector3d boids_j_pos_tmp;
+
 void update_boids()
 {
     //Vector3D dv[N];
     for(int i=0; i<N; i++){
-        Vector3D dv_coh;
-        Vector3D dv_sep;
-        Vector3D dv_ali;
+        //Vector3d dv_coh;
+        //Vector3d dv_sep;
+        //Vector3d dv_ali;
+        dv_coh << 0,0,0;
+        dv_sep << 0,0,0;
+        dv_ali << 0,0,0;
         int neivers_num_coh = 0;
         int neivers_num_sep = 0;
         int neivers_num_ali = 0;
         for(int j=0; j<N; j++){
-            Vector3D boids_j_pos_tmp = boids[j].position;
+            //Vector3d boids_j_pos_tmp = boids[j].position;
+            boids_j_pos_tmp = boids[j].position;
 
-            if ((boids_j_pos_tmp.x - boids[i].position.x) > FIELD_SIZE/2) {
-                boids_j_pos_tmp.x -= FIELD_SIZE;
-            } else if (boids[i].position.x - boids_j_pos_tmp.x > FIELD_SIZE/2) {
-                boids_j_pos_tmp.x += FIELD_SIZE;
+            if ((boids_j_pos_tmp(0) - boids[i].position(0)) > FIELD_SIZE/2) {
+                boids_j_pos_tmp(0) -= FIELD_SIZE;
+            } else if (boids[i].position(0) - boids_j_pos_tmp(0) > FIELD_SIZE/2) {
+                boids_j_pos_tmp(0) += FIELD_SIZE;
             }
-            if ((boids_j_pos_tmp.y - boids[i].position.y) > FIELD_SIZE/2) {
-                boids_j_pos_tmp.y -= FIELD_SIZE;
-            } else if (boids[i].position.y - boids_j_pos_tmp.y > FIELD_SIZE/2) {
-                boids_j_pos_tmp.y += FIELD_SIZE;
+            if ((boids_j_pos_tmp(1) - boids[i].position(1)) > FIELD_SIZE/2) {
+                boids_j_pos_tmp(1) -= FIELD_SIZE;
+            } else if (boids[i].position(1) - boids_j_pos_tmp(1) > FIELD_SIZE/2) {
+                boids_j_pos_tmp(1) += FIELD_SIZE;
             }
-            if ((boids_j_pos_tmp.z - boids[i].position.z) > FIELD_SIZE/2) {
-                boids_j_pos_tmp.z -= FIELD_SIZE;
-            } else if (boids[i].position.z - boids_j_pos_tmp.z > FIELD_SIZE/2) {
-                boids_j_pos_tmp.z += FIELD_SIZE;
+            if ((boids_j_pos_tmp(2) - boids[i].position(2)) > FIELD_SIZE/2) {
+                boids_j_pos_tmp(2) -= FIELD_SIZE;
+            } else if (boids[i].position(2) - boids_j_pos_tmp(2) > FIELD_SIZE/2) {
+                boids_j_pos_tmp(2) += FIELD_SIZE;
             }
 
             Boid target_boid(boids_j_pos_tmp);
@@ -95,7 +106,7 @@ void update_boids()
                 // Separation
                 if (boids[i].isInsideSeparationArea(target_boid)) {
                     neivers_num_sep ++;
-                    dv_sep += (boids[i].position - target_boid.position).getUnity();
+                    dv_sep += (boids[i].position - target_boid.position).normalized();
                 }
                 // Alignment
                 if (boids[i].isInsideAlignmentArea(target_boid)) {
@@ -119,58 +130,36 @@ void update_boids()
     for(int i=0; i<N; i++) {
         boids[i].velocity += dv[i];
 
-        if(boids[i].velocity.getAbs()>0. && boids[i].velocity.getAbs()>MAX_VELOCITY){
-            boids[i].velocity = boids[i].velocity.getUnity() * MAX_VELOCITY;
-        }else if(boids[i].velocity.getAbs()>0. && boids[i].velocity.getAbs()<MIN_VELOCITY){
-            boids[i].velocity = boids[i].velocity.getUnity() * MIN_VELOCITY;
+        if(boids[i].velocity.norm()>0. && boids[i].velocity.norm()>MAX_VELOCITY){
+            boids[i].velocity = boids[i].velocity.normalized() * MAX_VELOCITY;
+        }else if(boids[i].velocity.norm()>0. && boids[i].velocity.norm()<MIN_VELOCITY){
+            boids[i].velocity = boids[i].velocity.normalized() * MIN_VELOCITY;
         }
 
         //update boid
         boids[i].position += boids[i].velocity;
 
         //Boundary conditon
-        if(boids[i].position.x < 0.0) {
-            boids[i].position.x = FIELD_SIZE + boids[i].position.x;
+        if(boids[i].position(0) < 0.0) {
+            boids[i].position(0) = FIELD_SIZE + boids[i].position(0);
         }
-        if(boids[i].position.y < 0.0) {
-            boids[i].position.y = FIELD_SIZE + boids[i].position.y;
+        if(boids[i].position(1) < 0.0) {
+            boids[i].position(1) = FIELD_SIZE + boids[i].position(1);
         }
-        if(boids[i].position.z < 0.0) {
-            boids[i].position.z = FIELD_SIZE + boids[i].position.z;
+        if(boids[i].position(2) < 0.0) {
+            boids[i].position(2) = FIELD_SIZE + boids[i].position(2);
         }
-        if(boids[i].position.x > FIELD_SIZE) {
-            boids[i].position.x = boids[i].position.x - FIELD_SIZE;
+        if(boids[i].position(0) > FIELD_SIZE) {
+            boids[i].position(0) = boids[i].position(0) - FIELD_SIZE;
         }
-        if(boids[i].position.y > FIELD_SIZE) {
-            boids[i].position.y = boids[i].position.y - FIELD_SIZE;
+        if(boids[i].position(1) > FIELD_SIZE) {
+            boids[i].position(1) = boids[i].position(1) - FIELD_SIZE;
         }
-        if(boids[i].position.z > FIELD_SIZE) {
-            boids[i].position.z = boids[i].position.z - FIELD_SIZE;
+        if(boids[i].position(2) > FIELD_SIZE) {
+            boids[i].position(2) = boids[i].position(2) - FIELD_SIZE;
         }
 
-        //output data
-        /*
-        if(1-LOGGING && timeStep%outputStep==0){
-            ofData << ind++ << "," << i << " "
-                   << boids[i].position.x * 2.0 - 1.0 << " "
-                   << boids[i].position.y * 2.0 - 1.0 << " "
-                   << boids[i].position.z * 2.0 - 1.0 << " ";
-            if(boids[i].live){
-                ofData << 0;
-            }else{
-                ofData << 1;
-            }
-            ofData << ";\n";
-            if(stopPeriod && ind==10000){
-                exit(0);
-            }
-        }
-         */
     }
-    /*
-    if(LOGGING && timeStep%outputStep==0)
-        susceptability();
-        */
 }
 
 void init(void)
@@ -180,7 +169,7 @@ void init(void)
 
     std::cout
             << "N = " << N << "\n"
-
+            << "T = " << T << "\n"
             << "#Separation" << "\n"
             << "force: " << COEFF_SEPARATION << "\n"
             << "area distance: " << SIGHT_DISTANCE_SEPARATION << "\n"
@@ -202,20 +191,20 @@ void init(void)
 
     srand(12345);
     for(int i=0; i<N; i++){
-        boids[i].position.x =FIELD_SIZE*3/8 + drand48()*FIELD_SIZE/4;
-        boids[i].position.y =FIELD_SIZE*3/8 + drand48()*FIELD_SIZE/4;
+        boids[i].position(0) =FIELD_SIZE*3/8 + drand48()*FIELD_SIZE/4;
+        boids[i].position(1) =FIELD_SIZE*3/8 + drand48()*FIELD_SIZE/4;
         if (drand48() > 0.5) {
-            boids[i].position.z = drand48()*FIELD_SIZE/4 + FIELD_SIZE*3/4;
+            boids[i].position(2) = drand48()*FIELD_SIZE/4 + FIELD_SIZE*3/4;
         } else {
-            boids[i].position.z = drand48()*FIELD_SIZE/4;
+            boids[i].position(2) = drand48()*FIELD_SIZE/4;
         }
 
         double v = drand48() * (MAX_VELOCITY - MIN_VELOCITY) + MIN_VELOCITY;
         double th1 = drand48() * PI;
         double th2 = drand48() * 2.0 * PI;
-        boids[i].velocity.x = v * sin(th1) * cos(th2);
-        boids[i].velocity.y = v * sin(th1) * sin(th2);
-        boids[i].velocity.z = v * cos(th1);
+        boids[i].velocity(0) = v * sin(th1) * cos(th2);
+        boids[i].velocity(1) = v * sin(th1) * sin(th2);
+        boids[i].velocity(2) = v * cos(th1);
     }
 }
 
@@ -227,7 +216,7 @@ int main(int argc, char *argv[])
     T = (unsigned int)(atoi(argv[3]));
 
     boids = new Boid[N];
-    dv = new Vector3D[N];
+    dv = new Vector3d[N];
 
     check_endianness();
 
@@ -259,16 +248,16 @@ int main(int argc, char *argv[])
     for (unsigned int t=0; t<T; t++) {
         std::cout << t << std::endl;
         for(int i=0; i<N; i++){
-            float x = fix_byte_order((float)boids[i].position.x);
-            float y = fix_byte_order((float)boids[i].position.y);
-            float z = fix_byte_order((float)boids[i].position.z);
+            float x = fix_byte_order((float)boids[i].position(0));
+            float y = fix_byte_order((float)boids[i].position(1));
+            float z = fix_byte_order((float)boids[i].position(2));
             fout.write((char*)&x, sizeof(x));
             fout.write((char*)&y, sizeof(y));
             fout.write((char*)&z, sizeof(z));
         }
         update_boids();
     }
-    //glutMainLoop();
+
     fout.close();
     std::cout << "finish" << std::endl;
 

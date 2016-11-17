@@ -7,31 +7,24 @@
  *
  */
 
-#ifndef parameter_H
 #include "parameter.h"
-#endif
+#include <Eigen/Core>
 
-//#include <glut/glut.h>
-//#include <GLUI/GLUI.h>
-//#include "/Users/ikeg/Downloads/glui-2.36/src/include/GL/glui.h"
-#include "vector3D.h"
+using Eigen::Vector3d;
 
 class Boid {
 public:
 	Boid();
-	Boid(Vector3D _p);
-	Boid(Vector3D _p, Vector3D _v);
+	Boid(Vector3d _p);
+	Boid(Vector3d _p, Vector3d _v);
 
-	//void draw();
-    bool isInsideArea(Boid _b, double _sighe_distance, double _sight_angle);
-    bool isInsideSeparationArea(Boid _b);
-    bool isInsideAlignmentArea(Boid _b);
-	bool isInsideCohesionArea(Boid _b);
+    bool isInsideArea(Boid &_b, double _sighe_distance, double _sight_angle);
+    bool isInsideSeparationArea(Boid &_b);
+    bool isInsideAlignmentArea(Boid &_b);
+	bool isInsideCohesionArea(Boid &_b);
 
-	Vector3D position;
-	Vector3D velocity;
-
-	bool live;
+	Vector3d position;
+	Vector3d velocity;
 };
 
 
