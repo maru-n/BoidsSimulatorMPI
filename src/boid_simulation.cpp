@@ -13,8 +13,6 @@
 #include <omp.h>
 #endif
 
-static const double PI = 6*asin( 0.5 );
-
 BoidSimulation::BoidSimulation()
 {
 }
@@ -39,8 +37,8 @@ void BoidSimulation::init(unsigned int number_of_agents)
         }
 
         double v = drand48() * (MAX_VELOCITY - MIN_VELOCITY) + MIN_VELOCITY;
-        double th1 = drand48() * PI;
-        double th2 = drand48() * 2.0 * PI;
+        double th1 = drand48() * M_PI;
+        double th2 = drand48() * 2.0 * M_PI;
         boids[i].velocity.x = double(v * sin(th1) * cos(th2));
         boids[i].velocity.y = double(v * sin(th1) * sin(th2));
         boids[i].velocity.z = double(v * cos(th1));

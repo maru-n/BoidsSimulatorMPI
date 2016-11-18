@@ -6,7 +6,6 @@
 #include "boid.h"
 #include "parameter.h"
 #include <math.h>
-static const double PI = 6*asin( 0.5 );
 
 Boid::Boid(){
 	Vector3D p;
@@ -33,8 +32,8 @@ bool Boid::isInsideArea(Boid &_b, double _sighe_distance, double _sight_angle) {
         }
 		Vector3D sightVec = (*this).velocity;
         Vector3D relativePos = _b.position - (*this).position;
-        double th = acos((sightVec * relativePos) / (sightVec.norm() * relativePos.norm()));
-		if( th <= PI*_sight_angle ){
+        double th = double(acos((sightVec * relativePos) / (sightVec.norm() * relativePos.norm())));
+		if( th <= M_PI*_sight_angle ){
 			return true;
         }else{
             return false;

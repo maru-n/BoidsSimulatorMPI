@@ -83,8 +83,8 @@ int main(int argc, char *argv[])
         cout << "#OpenMP: Disabled" << endl;
     }
 
-    unsigned char MAJOR_VERSION = 0;
-    unsigned char MINOR_VERSION = 1;
+    const unsigned char MAJOR_VERSION = 0;
+    const unsigned char MINOR_VERSION = 1;
     char type[] = "PTCL";
     fout.write(type, 4);
 
