@@ -14,7 +14,8 @@ add_executable(MassiveSwarmSimCUI
         src/main.cpp
         src/boid.cpp
         src/vector3D.cpp
-        )
+        src/boid_simulation.cpp
+        src/boid_simulation.h)
 
 add_executable(MassiveSwarmSimCUI_legacy
         src_legacy/main.cpp
