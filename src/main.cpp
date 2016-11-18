@@ -13,6 +13,7 @@
 using std::string;
 using std::cout;
 using std::endl;
+using std::flush;
 
 bool is_little_endian;
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
          << "min: " << MIN_VELOCITY << endl
          << "max: " << MAX_VELOCITY << endl;
     if (boid_sim.is_openmp_enabled()) {
-        cout << "#OpenMP: Enabled (Max threads = " << boid_sim.get_max_threads() << ")" << endl;
+        cout << "#OpenMP: Enabled (max threads = " << boid_sim.get_max_threads() << ")" << endl;
     } else {
         cout << "#OpenMP: Disabled" << endl;
     }
@@ -99,7 +100,6 @@ int main(int argc, char *argv[])
     fout.write((char*)&tmp,sizeof(tmp));
 
     for (unsigned int t=0; t<T; t++) {
-        std::cout << t << std::endl;
         for(int i=0; i<N; i++){
             float x = fix_byte_order((float)boid_sim.boids[i].position.x);
             float y = fix_byte_order((float)boid_sim.boids[i].position.y);
@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
             fout.write((char*)&z, sizeof(z));
         }
         boid_sim.update();
+        cout << t << "/" << T << "\r" << flush;
     }
 
     fout.close();
