@@ -124,4 +124,3 @@ using namespace std;
 ostream& operator<<(ostream& stream, const Vector3D& v){
 	return stream <<'('<<v.x<<","<<v.y<<","<<v.z<<')';
 }
-
