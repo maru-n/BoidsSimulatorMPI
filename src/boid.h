@@ -7,7 +7,6 @@
  *
  */
 
-#include "parameter.h"
 #include "vector3D.h"
 
 class Boid {
