@@ -24,9 +24,9 @@ unsigned int T;
 
 Boid* boids;
 Vector3D *dv;
-Vector3D dv_coh;
-Vector3D dv_sep;
-Vector3D dv_ali;
+Vector3D *dv_coh;
+Vector3D *dv_sep;
+Vector3D *dv_ali;
 
 bool is_little_endian;
 template <typename T> T fix_byte_order(T value) {
@@ -54,8 +54,17 @@ void check_endianness() {
 
 void update_boids()
 {
+#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#pragma omp parallel
+#endif
+
+#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#pragma omp for
+#endif
     for(int i=0; i<N; i++){
-        dv_coh.x = dv_coh.y = dv_coh.z = dv_sep.x = dv_sep.y = dv_sep.z = dv_ali.x = dv_ali.y = dv_ali.z = 0.0;
+        dv_coh[i].x = dv_coh[i].y = dv_coh[i].z =
+        dv_sep[i].x = dv_sep[i].y = dv_sep[i].z =
+        dv_ali[i].x = dv_ali[i].y = dv_ali[i].z = 0.0;
         int neivers_num_coh = 0;
         int neivers_num_sep = 0;
         int neivers_num_ali = 0;
@@ -83,36 +92,37 @@ void update_boids()
                 // Cohesion
                 if (boids[i].isInsideCohesionArea(target_boid)){
                     neivers_num_coh ++;
-                    dv_coh += target_boid.position;
+                    dv_coh[i] += target_boid.position;
                 }
                 // Separation
                 if (boids[i].isInsideSeparationArea(target_boid)) {
                     neivers_num_sep ++;
-                    dv_sep += (boids[i].position - target_boid.position).normalized();
+                    dv_sep[i] += (boids[i].position - target_boid.position).normalized();
                 }
                 // Alignment
                 if (boids[i].isInsideAlignmentArea(target_boid)) {
                     neivers_num_ali ++;
-                    dv_ali += boids[j].velocity;
+                    dv_ali[i] += boids[j].velocity;
                 }
             }
         }
         if (neivers_num_coh != 0) {
-            dv_coh = dv_coh / neivers_num_coh - boids[i].position;
+            dv_coh[i] = dv_coh[i] / neivers_num_coh - boids[i].position;
         }
         if (neivers_num_sep != 0) {
-            //dv_sep = dv_sep / neivers_num_sep;
+            //dv_sep[i] = dv_sep[i] / neivers_num_sep;
         }
         if (neivers_num_ali != 0) {
-            dv_ali = dv_ali / neivers_num_ali - boids[i].velocity;
+            dv_ali[i] = dv_ali[i] / neivers_num_ali - boids[i].velocity;
         }
-        dv[i] = COEFF_COHESION*dv_coh + COEFF_SEPARATION*dv_sep +COEFF_ALIGNMENT*dv_ali;
+        dv[i] = COEFF_COHESION*dv_coh[i] + COEFF_SEPARATION*dv_sep[i] +COEFF_ALIGNMENT*dv_ali[i];
     }
 
 #if defined(_OPENMP) && defined(ENABLE_OPENMP)
-#pragma omp parallel for
+#pragma omp for
 #endif
     for(int i=0; i<N; i++) {
+
         boids[i].velocity += dv[i];
 
         if(boids[i].velocity.norm()>0. && boids[i].velocity.norm()>MAX_VELOCITY){
@@ -170,11 +180,10 @@ void init(void)
             << "min: " << MIN_VELOCITY << "\n"
             << "max: " << MAX_VELOCITY << "\n"
 #if defined(_OPENMP) && defined(ENABLE_OPENMP)
-            << "#OpenMP: On" << endl
+            << "#OpenMP: Enabled (Max threads = " << omp_get_max_threads() << ")" << std::endl;
 #else
-            << "#OpenMP: Off" << endl
+            << "#OpenMP: Disabled" << endl;
 #endif
-            ;
 
     srand(12345);
     for(int i=0; i<N; i++){
@@ -204,6 +213,9 @@ int main(int argc, char *argv[])
 
     boids = new Boid[N];
     dv = new Vector3D[N];
+    dv_ali = new Vector3D[N];
+    dv_coh = new Vector3D[N];
+    dv_sep = new Vector3D[N];
 
     check_endianness();
 
