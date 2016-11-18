@@ -6,6 +6,9 @@
  *  Copyright 2011 __MyCompanyName__. All rights reserved.
  *
  */
+#ifndef __BOID_VECTOR_3D_H__
+#define __BOID_VECTOR_3D_H__
+
 #ifndef parameter_H
 #include "parameter.h"
 #endif
@@ -48,3 +51,5 @@ Vector3D operator/(const Vector3D& v, double k);
 //画面への出力
 #include <iostream>
 std::ostream& operator<<(std::ostream& stream, const Vector3D& v);
+
+#endif
