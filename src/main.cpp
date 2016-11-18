@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <list>
 #include <math.h>
-#include <time.h>
-#include <sys/time.h>
 #include <fstream>
 #include "boid.h"
 #include <iostream>
@@ -21,6 +19,9 @@ unsigned int T;
 
 Boid* boids;
 Vector3D *dv;
+Vector3D dv_coh;
+Vector3D dv_sep;
+Vector3D dv_ali;
 
 bool is_little_endian;
 template <typename T> T fix_byte_order(T value) {
@@ -48,11 +49,8 @@ void check_endianness() {
 
 void update_boids()
 {
-    //Vector3D dv[N];
     for(int i=0; i<N; i++){
-        Vector3D dv_coh;
-        Vector3D dv_sep;
-        Vector3D dv_ali;
+        dv_coh.x = dv_coh.y = dv_coh.z = dv_sep.x = dv_sep.y = dv_sep.z = dv_ali.x = dv_ali.y = dv_ali.z = 0.0;
         int neivers_num_coh = 0;
         int neivers_num_sep = 0;
         int neivers_num_ali = 0;
@@ -162,7 +160,13 @@ void init(void)
 
             << "#Velocity" << "\n"
             << "min: " << MIN_VELOCITY << "\n"
-            << "max: " << MAX_VELOCITY << "\n";
+            << "max: " << MAX_VELOCITY << "\n"
+#ifdef _OPENMP
+            << "OpenMP: On" << endl
+#else
+            << "OpenMP: Off" << endl
+#endif
+            ;
 
     srand(12345);
     for(int i=0; i<N; i++){
@@ -232,12 +236,9 @@ int main(int argc, char *argv[])
         }
         update_boids();
     }
-    //glutMainLoop();
+
     fout.close();
     std::cout << "finish" << std::endl;
 
     return 0;
 }
-
-
-
