@@ -7,8 +7,13 @@
 #include <math.h>
 #include <fstream>
 #include "boid.h"
-#include <iostream>
-#include "parameter.h"
+
+#define ENABLE_OPENMP
+
+#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#include <omp.h>
+#endif
+
 
 using namespace std;
 
@@ -104,6 +109,9 @@ void update_boids()
         dv[i] = COEFF_COHESION*dv_coh + COEFF_SEPARATION*dv_sep +COEFF_ALIGNMENT*dv_ali;
     }
 
+#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#pragma omp parallel for
+#endif
     for(int i=0; i<N; i++) {
         boids[i].velocity += dv[i];
 
@@ -161,10 +169,10 @@ void init(void)
             << "#Velocity" << "\n"
             << "min: " << MIN_VELOCITY << "\n"
             << "max: " << MAX_VELOCITY << "\n"
-#ifdef _OPENMP
-            << "OpenMP: On" << endl
+#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+            << "#OpenMP: On" << endl
 #else
-            << "OpenMP: Off" << endl
+            << "#OpenMP: Off" << endl
 #endif
             ;
 
