@@ -3,8 +3,8 @@
 export N=1000
 export T=30
 export build_dir=build
-export data_name=data.ptcl
-export data_name_legacy=data_legay.ptcl
+export data_name=test_data.ptcl
+export data_name_legacy=test_data_legay.ptcl
 export CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++"
 
 if [ ! -e ${build_dir} ]; then mkdir ${build_dir} ; fi
@@ -22,18 +22,18 @@ if [ $? != 0 ]; then
     exit -1
 fi
 
-echo -e "\033[0;32mcalculating current version\033[0;39m"
+echo -e "calculating current version."
 ./MassiveSwarmSimCUI ${data_name} $N $T >> /dev/null
 
-echo -e "\033[0;32mcalculating legacy version\033[0;39m"
+echo -e "calculating legacy version."
 ./MassiveSwarmSimCUI_legacy ${data_name_legacy} $N $T > /dev/null
 
-cmp ${data_name} ${data_name_legacy} > /dev/null
+cmp ${data_name} ${data_name_legacy} 0 0> /dev/null
 
 if [ $? = 0 ]; then
-    echo -e "\033[0;32mSucceeded\033[0;39m"
+    echo -e "\033[0;32mTest Succeeded\033[0;39m"
 else
-    echo -e "\033[0;31mFailed\033[0;39m"
+    echo -e "\033[0;31mTest Failed\033[0;39m"
 fi
 
 #cd ..
