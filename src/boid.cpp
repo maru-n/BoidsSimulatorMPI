@@ -4,7 +4,6 @@
  */
 
 #include "boid.h"
-#include "parameter.h"
 #include <math.h>
 
 Boid::Boid(){
@@ -41,7 +40,7 @@ bool Boid::isInsideArea(Boid &_b, double _sighe_distance, double _sight_angle) {
 	}
 	return false;
 }
-
+/*
 bool Boid::isInsideSeparationArea(Boid &_b) {
     return isInsideArea(_b, SIGHT_DISTANCE_SEPARATION, SIGHT_ANGLE_SEPARATION);
 }
@@ -53,4 +52,4 @@ bool Boid::isInsideAlignmentArea(Boid &_b) {
 bool Boid::isInsideCohesionArea(Boid &_b) {
     return isInsideArea(_b, SIGHT_DISTANCE_COHESION, SIGHT_ANGLE_COHESION);
 }
-
+*/

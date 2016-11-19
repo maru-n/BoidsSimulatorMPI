@@ -9,17 +9,22 @@
 #include <iostream>
 #include "dtype.h"
 #include "boid_simulation.h"
-#include "parameter.h"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 
 using std::string;
 using std::cout;
 using std::endl;
 using std::flush;
+using boost::property_tree::ptree;
+using boost::property_tree::read_ini;
 
-bool is_little_endian;
 unsigned int N;
 unsigned int T;
 unsigned int FPS = 30;
+double FIELD_SIZE = 1.0;
+
+bool is_little_endian;
 BoidSimulation boid_sim;
 std::ofstream fout;
 
@@ -48,23 +53,24 @@ void check_endianness() {
 
 void print_settings()
 {
-    cout << "N = " << N << endl
-         << "T = " << T << endl
+    cout << "N: " << N << endl
+         << "T: " << T << endl
+         << "field size: " << boid_sim.field_size << endl
          << "#Separation" << endl
-         << "force: " << COEFF_SEPARATION << endl
-         << "area distance: " << SIGHT_DISTANCE_SEPARATION << endl
-         << "area angle: " << SIGHT_ANGLE_SEPARATION << endl
+         << "force: " << boid_sim.separation.force_coefficient << endl
+         << "area distance: " << boid_sim.separation.sight_distance << endl
+         << "area angle: " << boid_sim.separation.sight_agnle << endl
          << "#Alignment" << endl
-         << "force: " << COEFF_ALIGNMENT << endl
-         << "area distance: " << SIGHT_DISTANCE_ALIGNMENT << endl
-         << "area angle: " << SIGHT_ANGLE_ALIGNMENT << endl
+         << "force: " << boid_sim.alignment.force_coefficient << endl
+         << "area distance: " <<  boid_sim.alignment.sight_distance << endl
+         << "area angle: " << boid_sim.alignment.sight_agnle << endl
          << "#Cohesion" << endl
-         << "force: " << COEFF_COHESION << endl
-         << "area distance: " << SIGHT_DISTANCE_COHESION << endl
-         << "area angle: " << SIGHT_ANGLE_COHESION << endl
+         << "force: " << boid_sim.cohesion.force_coefficient << endl
+         << "area distance: " << boid_sim.cohesion.sight_distance << endl
+         << "area angle: " << boid_sim.cohesion.sight_agnle << endl
          << "#Velocity" << endl
-         << "min: " << MIN_VELOCITY << endl
-         << "max: " << MAX_VELOCITY << endl
+         << "min: " << boid_sim.velocity.min << endl
+         << "max: " << boid_sim.velocity.max << endl
          << "#OpenMP: ";
     if (boid_sim.is_openmp_enabled()) {
         cout << "Enabled (max threads = " << boid_sim.get_max_threads() << ")" << endl;
@@ -78,8 +84,24 @@ int main(int argc, char *argv[])
     string fname = argv[1];
     N = (unsigned int)(atoi(argv[2]));
     T = (unsigned int)(atoi(argv[3]));
+    string setting_fname = argv[4];
 
-    boid_sim.init(N);
+    ptree pt;
+    read_ini(setting_fname, pt);
+    FPS = pt.get<unsigned int>("Global.FPS", FPS);
+    boid_sim.setup(N,
+                   pt.get<double>("Global.FIELD_SIZE"),
+                   pt.get<double>("Separation.SIGHT_DISTANCE"),
+                   pt.get<double>("Separation.SIGHT_ANGLE"),
+                   pt.get<double>("Separation.FORCE_COEFFICIENT"),
+                   pt.get<double>("Alignment.SIGHT_DISTANCE"),
+                   pt.get<double>("Alignment.SIGHT_ANGLE"),
+                   pt.get<double>("Alignment.FORCE_COEFFICIENT"),
+                   pt.get<double>("Cohesion.SIGHT_DISTANCE"),
+                   pt.get<double>("Cohesion.SIGHT_ANGLE"),
+                   pt.get<double>("Cohesion.FORCE_COEFFICIENT"),
+                   pt.get<double>("Velocity.MAX"),
+                   pt.get<double>("Velocity.MIN"));
 
     print_settings();
     check_endianness();
@@ -96,6 +118,7 @@ int main(int argc, char *argv[])
     header.fps = fix_byte_order(FPS);
     fout.write((char*)&header,sizeof(header));
 
+    std::cout << "simulation start." << std::endl;
     for (unsigned int t=0; t<T; t++) {
         for(int i=0; i<N; i++){
             float x = fix_byte_order((float)boid_sim.boids[i].position.x);
@@ -108,9 +131,8 @@ int main(int argc, char *argv[])
         boid_sim.update();
         cout << t << "/" << T << "\r" << flush;
     }
-
-    fout.close();
     std::cout << "simulation end." << std::endl;
-
+    fout.close();
     return 0;
 }
+
