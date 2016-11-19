@@ -7,6 +7,7 @@
 #include <math.h>
 #include <fstream>
 #include <iostream>
+#include "dtype.h"
 #include "boid_simulation.h"
 #include "parameter.h"
 
@@ -16,6 +17,11 @@ using std::endl;
 using std::flush;
 
 bool is_little_endian;
+unsigned int N;
+unsigned int T;
+unsigned int FPS = 30;
+BoidSimulation boid_sim;
+std::ofstream fout;
 
 template <typename T> T fix_byte_order(T value) {
     if (is_little_endian) {
@@ -29,6 +35,7 @@ template <typename T> T fix_byte_order(T value) {
     return ret;
 }
 
+
 void check_endianness() {
     int x = 1;   // 0x00000001
     if( *(char *)&x ){
@@ -38,25 +45,9 @@ void check_endianness() {
     }
 }
 
-int main(int argc, char *argv[])
+
+void print_settings()
 {
-    string fname;
-    fname = argv[1];
-    unsigned int N = (unsigned int)(atoi(argv[2]));
-    unsigned int T = (unsigned int)(atoi(argv[3]));
-
-    check_endianness();
-
-    BoidSimulation boid_sim;
-    boid_sim.init(N);
-
-    std::ofstream fout;
-    fout.open(fname.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
-    if (!fout) {
-        cout << "Couldn't open " << fname << endl;
-        return -1;
-    }
-
     cout << "N = " << N << endl
          << "T = " << T << endl
          << "#Separation" << endl
@@ -82,22 +73,30 @@ int main(int argc, char *argv[])
     } else {
         cout << "#OpenMP: Disabled" << endl;
     }
+}
 
-    const unsigned char MAJOR_VERSION = 0;
-    const unsigned char MINOR_VERSION = 1;
-    char type[] = "PTCL";
-    fout.write(type, 4);
+int main(int argc, char *argv[])
+{
+    string fname = argv[1];
+    N = (unsigned int)(atoi(argv[2]));
+    T = (unsigned int)(atoi(argv[3]));
 
-    fout.write((char*)&MAJOR_VERSION, sizeof(MAJOR_VERSION));
-    fout.write((char*)&MINOR_VERSION, sizeof(MINOR_VERSION));
+    boid_sim.init(N);
 
-    unsigned int tmp;
-    tmp = fix_byte_order(N);
-    fout.write((char*)&tmp,sizeof(tmp));
-    tmp = fix_byte_order(T);
-    fout.write((char*)&tmp,sizeof(tmp));
-    tmp = fix_byte_order(fps);
-    fout.write((char*)&tmp,sizeof(tmp));
+    print_settings();
+    check_endianness();
+
+    fout.open(fname.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
+    if (!fout) {
+        cout << "Couldn't open " << fname << endl;
+        return -1;
+    }
+
+    data_file_header_v01 header;
+    header.N = fix_byte_order(N);
+    header.T = fix_byte_order(T);
+    header.fps = fix_byte_order(FPS);
+    fout.write((char*)&header,sizeof(header));
 
     for (unsigned int t=0; t<T; t++) {
         for(int i=0; i<N; i++){
@@ -113,7 +112,7 @@ int main(int argc, char *argv[])
     }
 
     fout.close();
-    std::cout << "finish" << std::endl;
+    std::cout << "simulation end." << std::endl;
 
     return 0;
 }
