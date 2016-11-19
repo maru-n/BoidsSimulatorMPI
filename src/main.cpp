@@ -54,24 +54,22 @@ void print_settings()
          << "force: " << COEFF_SEPARATION << endl
          << "area distance: " << SIGHT_DISTANCE_SEPARATION << endl
          << "area angle: " << SIGHT_ANGLE_SEPARATION << endl
-
          << "#Alignment" << endl
          << "force: " << COEFF_ALIGNMENT << endl
          << "area distance: " << SIGHT_DISTANCE_ALIGNMENT << endl
          << "area angle: " << SIGHT_ANGLE_ALIGNMENT << endl
-
          << "#Cohesion" << endl
          << "force: " << COEFF_COHESION << endl
          << "area distance: " << SIGHT_DISTANCE_COHESION << endl
          << "area angle: " << SIGHT_ANGLE_COHESION << endl
-
          << "#Velocity" << endl
          << "min: " << MIN_VELOCITY << endl
-         << "max: " << MAX_VELOCITY << endl;
+         << "max: " << MAX_VELOCITY << endl
+         << "#OpenMP: ";
     if (boid_sim.is_openmp_enabled()) {
-        cout << "#OpenMP: Enabled (max threads = " << boid_sim.get_max_threads() << ")" << endl;
+        cout << "Enabled (max threads = " << boid_sim.get_max_threads() << ")" << endl;
     } else {
-        cout << "#OpenMP: Disabled" << endl;
+        cout << "Disabled" << endl;
     }
 }
 
@@ -88,7 +86,7 @@ int main(int argc, char *argv[])
 
     fout.open(fname.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
     if (!fout) {
-        cout << "Couldn't open " << fname << endl;
+        std::cerr << "Couldn't open " << fname << endl;
         return -1;
     }
 
