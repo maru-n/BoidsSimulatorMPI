@@ -9,20 +9,20 @@
 #include <iostream>
 #include "dtype.h"
 #include "boid_simulation.h"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
+//#include <boost/property_tree/ptree.hpp>
+//#include <boost/property_tree/ini_parser.hpp>
 
 using std::string;
 using std::cout;
 using std::endl;
 using std::flush;
-using boost::property_tree::ptree;
-using boost::property_tree::read_ini;
+//using boost::property_tree::ptree;
+//using boost::property_tree::read_ini;
 
+unsigned int FPS = 30;
 unsigned int N;
 unsigned int T;
-unsigned int FPS = 30;
-double FIELD_SIZE = 1.0;
+double FIELD_SIZE;
 
 bool is_little_endian;
 BoidSimulation boid_sim;
@@ -86,9 +86,9 @@ int main(int argc, char *argv[])
     T = (unsigned int)(atoi(argv[3]));
     string setting_fname = argv[4];
 
+    /*
     ptree pt;
     read_ini(setting_fname, pt);
-    FPS = pt.get<unsigned int>("Global.FPS", FPS);
     boid_sim.setup(N,
                    pt.get<double>("Global.FIELD_SIZE"),
                    pt.get<double>("Separation.SIGHT_DISTANCE"),
@@ -102,6 +102,20 @@ int main(int argc, char *argv[])
                    pt.get<double>("Cohesion.FORCE_COEFFICIENT"),
                    pt.get<double>("Velocity.MAX"),
                    pt.get<double>("Velocity.MIN"));
+                   */
+    boid_sim.setup(N,
+                   atof(argv[5]),
+                   atof(argv[6]),
+                   atof(argv[7]),
+                   atof(argv[8]),
+                   atof(argv[9]),
+                   atof(argv[10]),
+                   atof(argv[11]),
+                   atof(argv[12]),
+                   atof(argv[13]),
+                   atof(argv[14]),
+                   atof(argv[15]),
+                   atof(argv[16]));
 
     print_settings();
     check_endianness();

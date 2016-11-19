@@ -1,11 +1,13 @@
 PROGRAM	= MassiveSwarmSimCUI
 OBJS	= src/main.o src/boid.o src/boid_simulation.o src/vector3D.o
 
-CC	= fccpx
+CC = fccpx
 CXX = FCCpx
+#CC = gcc
+#CXX = g++
 
-CFLAGS   = -Kfast,parallel,openmp,optmsg=2 -V -Nsrc,sta
-CXXFLAGS = -Kfast,parallel,openmp,optmsg=2 -V -Nsrc,sta -std=c++11
+CFLAGS   = -V -Kfast,parallel,openmp,optmsg=2 -V -Nsrc,sta -L/volume2/home/hp160264/k03378/boost_1_62_0/stage/lib -I/volume2/home/hp160264/k03378/boost_1_62_0
+CXXFLAGS = -Kfast,parallel,openmp,optmsg=2 -V -Nsrc,sta -L/volume2/home/hp160264/k03378/boost_1_62_0/stage/lib -I/volume2/home/hp160264/k03378/boost_1_62_0 -std=c++11
 
 all: $(PROGRAM)
 
