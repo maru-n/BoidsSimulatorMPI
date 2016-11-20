@@ -3,10 +3,10 @@
 export N=1000
 export T=30
 export build_dir=build
-export data_name=test_data.ptcl
-export data_name_legacy=test_data_legay.ptcl
+export data_name=data_test.ptcl
+export data_name_legacy=data_test_legay.ptcl
 export setting_file="../settings/test.ini"
-export CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++"
+#export CMAKE_OPTIONS="-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++"
 
 if [ ! -e ${build_dir} ]; then mkdir ${build_dir} ; fi
 

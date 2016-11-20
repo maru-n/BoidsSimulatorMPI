@@ -1,5 +1,6 @@
 .idea
 build
 data
-jobscripts
-job_scripts
+k_scripts
+job_scripts/*
+job_scripts/example.sh

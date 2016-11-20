@@ -14,5 +14,6 @@
 
 export AGENT_NUM=1000
 export TIME_STEP=1800
+export DATA_FILE_NAME=data_${PJM_JOBID}.ptcl
 
-MassiveSwarmSimCUI data.ptcl ${AGENT_NUM} ${TIME_STEP} *.ini
+./MassiveSwarmSimCUI ${DATA_FILE_NAME} ${AGENT_NUM} ${TIME_STEP} *.ini
