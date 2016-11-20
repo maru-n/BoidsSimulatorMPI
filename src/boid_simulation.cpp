@@ -27,12 +27,11 @@ void BoidSimulation::setup(unsigned int number_of_agents,
                            double cohesion_sight_angle,
                            double cohesion_force_coefficient,
                            double velocity_max,
-                           double velocity_min)
-{
+                           double velocity_min) {
     this->field_size = field_size;
     separation = {separation_sight_distance, separation_sight_angle, separation_force_coefficient};
-    alignment  = {alignment_sight_distance, alignment_sight_angle, alignment_force_coefficient};
-    cohesion   = {cohesion_sight_distance, cohesion_sight_angle, cohesion_force_coefficient};
+    alignment = {alignment_sight_distance, alignment_sight_angle, alignment_force_coefficient};
+    cohesion = {cohesion_sight_distance, cohesion_sight_angle, cohesion_force_coefficient};
     velocity = {velocity_max, velocity_min};
     N = number_of_agents;
     boids = new Boid[N];
@@ -40,23 +39,31 @@ void BoidSimulation::setup(unsigned int number_of_agents,
     dv_ali = new Vector3D[N];
     dv_coh = new Vector3D[N];
     dv_sep = new Vector3D[N];
+}
 
-    srand(12345);
-    for(int i=0; i<N; i++){
-        boids[i].position.x =field_size*3/8 + drand48()*field_size/4;
-        boids[i].position.y =field_size*3/8 + drand48()*field_size/4;
-        if (drand48() > 0.5) {
-            boids[i].position.z = drand48()*field_size/4 + field_size*3/4;
-        } else {
-            boids[i].position.z = drand48()*field_size/4;
+void BoidSimulation::init(std::string init_condition)
+{
+
+    if (init_condition == "test") {
+        srand(12345);
+        for (int i = 0; i < N; i++) {
+            boids[i].position.x = field_size * 3 / 8 + drand48() * field_size / 4;
+            boids[i].position.y = field_size * 3 / 8 + drand48() * field_size / 4;
+            if (drand48() > 0.5) {
+                boids[i].position.z = drand48() * field_size / 4 + field_size * 3 / 4;
+            } else {
+                boids[i].position.z = drand48() * field_size / 4;
+            }
+
+            double v = drand48() * (velocity.max - velocity.min) + velocity.min;
+            double th1 = drand48() * M_PI;
+            double th2 = drand48() * 2.0 * M_PI;
+            boids[i].velocity.x = double(v * sin(th1) * cos(th2));
+            boids[i].velocity.y = double(v * sin(th1) * sin(th2));
+            boids[i].velocity.z = double(v * cos(th1));
         }
+    } else if (init_condition=="random_uniform") {
 
-        double v = drand48() * (velocity.max - velocity.min) + velocity.min;
-        double th1 = drand48() * M_PI;
-        double th2 = drand48() * 2.0 * M_PI;
-        boids[i].velocity.x = double(v * sin(th1) * cos(th2));
-        boids[i].velocity.y = double(v * sin(th1) * sin(th2));
-        boids[i].velocity.z = double(v * cos(th1));
     }
 }
 

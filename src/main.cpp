@@ -86,6 +86,7 @@ int main(int argc, char *argv[])
     T = (unsigned int)(atoi(argv[3]));
     string setting_fname = argv[4];
 
+    // setupt simulation
     /*
     ptree pt;
     read_ini(setting_fname, pt);
@@ -116,22 +117,24 @@ int main(int argc, char *argv[])
                    atof(argv[14]),
                    atof(argv[15]),
                    atof(argv[16]));
-
     print_settings();
     check_endianness();
 
+    // write header of output data
     fout.open(fname.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
     if (!fout) {
         std::cerr << "Couldn't open " << fname << endl;
         return -1;
     }
-
     data_file_header_v01 header;
     header.N = fix_byte_order(N);
     header.T = fix_byte_order(T);
     header.fps = fix_byte_order(FPS);
     fout.write((char*)&header,sizeof(header));
 
+    // simulation
+    string sim_init_condition = "test";
+    boid_sim.init(sim_init_condition);
     std::cout << "simulation start." << std::endl;
     for (unsigned int t=0; t<T; t++) {
         for(int i=0; i<N; i++){
