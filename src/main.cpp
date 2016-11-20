@@ -84,7 +84,9 @@ int main(int argc, char *argv[])
     string fname = argv[1];
     N = (unsigned int)(atoi(argv[2]));
     T = (unsigned int)(atoi(argv[3]));
-    string setting_fname = argv[4];
+    //string setting_fname = argv[4];
+    string sim_init_condition = argv[4];
+    int rand_seed = atoi(argv[5]);
 
     // setupt simulation
     /*
@@ -105,7 +107,6 @@ int main(int argc, char *argv[])
                    pt.get<double>("Velocity.MIN"));
                    */
     boid_sim.setup(N,
-                   atof(argv[5]),
                    atof(argv[6]),
                    atof(argv[7]),
                    atof(argv[8]),
@@ -116,7 +117,8 @@ int main(int argc, char *argv[])
                    atof(argv[13]),
                    atof(argv[14]),
                    atof(argv[15]),
-                   atof(argv[16]));
+                   atof(argv[16]),
+                   atof(argv[17]));
     print_settings();
     check_endianness();
 
@@ -133,8 +135,8 @@ int main(int argc, char *argv[])
     fout.write((char*)&header,sizeof(header));
 
     // simulation
-    string sim_init_condition = "test";
-    boid_sim.init(sim_init_condition);
+
+    boid_sim.init(sim_init_condition, rand_seed);
     std::cout << "simulation start." << std::endl;
     for (unsigned int t=0; t<T; t++) {
         for(int i=0; i<N; i++){

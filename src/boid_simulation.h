@@ -31,7 +31,7 @@ public:
                double cohesion_force_coefficient,
                double velocity_max,
                double velocity_min);
-    void init(std::string init_condition);
+    void init(std::string init_condition, int rand_seed);
     void update();
     bool is_openmp_enabled();
     int get_max_threads();

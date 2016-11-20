@@ -41,9 +41,8 @@ void BoidSimulation::setup(unsigned int number_of_agents,
     dv_sep = new Vector3D[N];
 }
 
-void BoidSimulation::init(std::string init_condition)
+void BoidSimulation::init(std::string init_condition, int rand_seed)
 {
-
     if (init_condition == "test") {
         srand(12345);
         for (int i = 0; i < N; i++) {
@@ -63,6 +62,18 @@ void BoidSimulation::init(std::string init_condition)
             boids[i].velocity.z = double(v * cos(th1));
         }
     } else if (init_condition=="random_uniform") {
+        srand(rand_seed);
+        for (int i = 0; i < N; i++) {
+            boids[i].position.x = field_size * drand48();
+            boids[i].position.y = field_size * drand48();
+            boids[i].position.z = field_size * drand48();
+            double v = drand48() * (velocity.max - velocity.min) + velocity.min;
+            double th1 = drand48() * M_PI;
+            double th2 = drand48() * 2.0 * M_PI;
+            boids[i].velocity.x = double(v * sin(th1) * cos(th2));
+            boids[i].velocity.y = double(v * sin(th1) * sin(th2));
+            boids[i].velocity.z = double(v * cos(th1));
+        }
 
     }
 }
