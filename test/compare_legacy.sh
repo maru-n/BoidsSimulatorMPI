@@ -24,8 +24,7 @@ if [ $? != 0 ]; then
 fi
 
 echo -e "calculating current version."
-#./MassiveSwarmSimCUI ${data_name} $N $T ${setting_file} 1 0.1 1 0.0001 0.1 1 0.1 0.1 1 0.1 0.003 0.001 > /dev/null
-./MassiveSwarmSimCUI ${data_name} $N $T test 12345 1 0.1 1 0.0001 0.1 1 0.1 0.1 1 0.1 0.003 0.001 > /dev/null
+./MassiveSwarmSimCUI ${data_name} $N $T ${setting_file} > /dev/null
 if [ $? != 0 ]; then
     echo failed 1>&2
     exit -1

@@ -9,15 +9,16 @@
 #include <iostream>
 #include "dtype.h"
 #include "boid_simulation.h"
-//#include <boost/property_tree/ptree.hpp>
-//#include <boost/property_tree/ini_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
+
 
 using std::string;
 using std::cout;
 using std::endl;
 using std::flush;
-//using boost::property_tree::ptree;
-//using boost::property_tree::read_ini;
+using boost::property_tree::ptree;
+using boost::property_tree::read_ini;
 
 unsigned int FPS = 30;
 unsigned int N;
@@ -84,12 +85,9 @@ int main(int argc, char *argv[])
     string fname = argv[1];
     N = (unsigned int)(atoi(argv[2]));
     T = (unsigned int)(atoi(argv[3]));
-    //string setting_fname = argv[4];
-    string sim_init_condition = argv[4];
-    int rand_seed = atoi(argv[5]);
+    string setting_fname = argv[4];
 
     // setupt simulation
-    /*
     ptree pt;
     read_ini(setting_fname, pt);
     boid_sim.setup(N,
@@ -105,20 +103,6 @@ int main(int argc, char *argv[])
                    pt.get<double>("Cohesion.FORCE_COEFFICIENT"),
                    pt.get<double>("Velocity.MAX"),
                    pt.get<double>("Velocity.MIN"));
-                   */
-    boid_sim.setup(N,
-                   atof(argv[6]),
-                   atof(argv[7]),
-                   atof(argv[8]),
-                   atof(argv[9]),
-                   atof(argv[10]),
-                   atof(argv[11]),
-                   atof(argv[12]),
-                   atof(argv[13]),
-                   atof(argv[14]),
-                   atof(argv[15]),
-                   atof(argv[16]),
-                   atof(argv[17]));
     print_settings();
     check_endianness();
 
@@ -135,7 +119,8 @@ int main(int argc, char *argv[])
     fout.write((char*)&header,sizeof(header));
 
     // simulation
-
+    string sim_init_condition = pt.get<string>("Global.INIT");
+    int rand_seed = pt.get<int>("Global.RANDOM_SEED");
     boid_sim.init(sim_init_condition, rand_seed);
     std::cout << "simulation start." << std::endl;
     for (unsigned int t=0; t<T; t++) {

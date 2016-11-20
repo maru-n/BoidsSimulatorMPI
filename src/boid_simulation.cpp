@@ -43,8 +43,8 @@ void BoidSimulation::setup(unsigned int number_of_agents,
 
 void BoidSimulation::init(std::string init_condition, int rand_seed)
 {
+    srand(rand_seed);
     if (init_condition == "test") {
-        srand(12345);
         for (int i = 0; i < N; i++) {
             boids[i].position.x = field_size * 3 / 8 + drand48() * field_size / 4;
             boids[i].position.y = field_size * 3 / 8 + drand48() * field_size / 4;
@@ -62,7 +62,6 @@ void BoidSimulation::init(std::string init_condition, int rand_seed)
             boids[i].velocity.z = double(v * cos(th1));
         }
     } else if (init_condition=="random_uniform") {
-        srand(rand_seed);
         for (int i = 0; i < N; i++) {
             boids[i].position.x = field_size * drand48();
             boids[i].position.y = field_size * drand48();
