@@ -11,7 +11,10 @@
 #include "boid_simulation.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
-
+#ifdef MPI_ENABLE
+#include "mpi.h"
+#include <mpi-ext.h>
+#endif
 
 using std::string;
 using std::cout;
@@ -80,6 +83,7 @@ void print_settings()
     }
 }
 
+
 int main(int argc, char *argv[])
 {
     string fname = argv[1];
@@ -87,7 +91,7 @@ int main(int argc, char *argv[])
     T = (unsigned int)(atoi(argv[3]));
     string setting_fname = argv[4];
 
-    // setupt simulation
+    // setup simulation
     ptree pt;
     read_ini(setting_fname, pt);
     boid_sim.setup(N,

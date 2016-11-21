@@ -6,8 +6,12 @@
 #include <math.h>
 #include <stdlib.h>
 
-#define ENABLE_OPENMP
+#ifdef MPI_ENABLE
+#include "mpi.h"
+#include <mpi-ext.h>
+#endif
 
+#define ENABLE_OPENMP
 #if defined(_OPENMP) && defined(ENABLE_OPENMP)
 #include <omp.h>
 #endif
@@ -61,7 +65,7 @@ void BoidSimulation::init(std::string init_condition, int rand_seed)
             boids[i].velocity.y = double(v * sin(th1) * sin(th2));
             boids[i].velocity.z = double(v * cos(th1));
         }
-    } else if (init_condition=="random_uniform") {
+    } else if (init_condition == "random_uniform") {
         for (int i = 0; i < N; i++) {
             boids[i].position.x = field_size * drand48();
             boids[i].position.y = field_size * drand48();
