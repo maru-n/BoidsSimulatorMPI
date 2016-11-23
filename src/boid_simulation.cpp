@@ -181,20 +181,17 @@ void BoidSimulation::update()
         //Boundary conditon
         if(boids[i].position.x < 0.0) {
             boids[i].position.x = field_size + boids[i].position.x;
+        } else if(boids[i].position.x > field_size) {
+            boids[i].position.x = boids[i].position.x - field_size;
         }
         if(boids[i].position.y < 0.0) {
             boids[i].position.y = field_size + boids[i].position.y;
+        } else if(boids[i].position.y > field_size) {
+            boids[i].position.y = boids[i].position.y - field_size;
         }
         if(boids[i].position.z < 0.0) {
             boids[i].position.z = field_size + boids[i].position.z;
-        }
-        if(boids[i].position.x > field_size) {
-            boids[i].position.x = boids[i].position.x - field_size;
-        }
-        if(boids[i].position.y > field_size) {
-            boids[i].position.y = boids[i].position.y - field_size;
-        }
-        if(boids[i].position.z > field_size) {
+        } else if(boids[i].position.z > field_size) {
             boids[i].position.z = boids[i].position.z - field_size;
         }
     }
