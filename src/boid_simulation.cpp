@@ -18,6 +18,14 @@
 
 BoidSimulation::BoidSimulation() {}
 
+BoidSimulation::~BoidSimulation()
+{
+    delete boids;
+    delete dv;
+    delete dv_coh;
+    delete dv_sep;
+    delete dv_ali;
+}
 
 void BoidSimulation::setup(unsigned int number_of_agents,
                            double field_size,
@@ -31,7 +39,10 @@ void BoidSimulation::setup(unsigned int number_of_agents,
                            double cohesion_sight_angle,
                            double cohesion_force_coefficient,
                            double velocity_max,
-                           double velocity_min) {
+                           double velocity_min,
+                           std::string init_condition,
+                           int rand_seed)
+{
     this->field_size = field_size;
     separation = {separation_sight_distance, separation_sight_angle, separation_force_coefficient};
     alignment = {alignment_sight_distance, alignment_sight_angle, alignment_force_coefficient};
@@ -43,9 +54,11 @@ void BoidSimulation::setup(unsigned int number_of_agents,
     dv_ali = new Vector3D[N];
     dv_coh = new Vector3D[N];
     dv_sep = new Vector3D[N];
+    this->init_condition = init_condition;
+    this->rand_seed = rand_seed;
 }
 
-void BoidSimulation::init(std::string init_condition, int rand_seed)
+void BoidSimulation::init()
 {
     srand(rand_seed);
     if (init_condition == "test") {

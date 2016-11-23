@@ -18,6 +18,7 @@ typedef struct {
 class BoidSimulation {
 public:
     BoidSimulation();
+    virtual ~BoidSimulation();
     void setup(unsigned int number_of_agents,
                double field_size,
                double separation_sight_distance,
@@ -30,9 +31,11 @@ public:
                double cohesion_sight_angle,
                double cohesion_force_coefficient,
                double velocity_max,
-               double velocity_min);
-    void init(std::string init_condition, int rand_seed);
-    void update();
+               double velocity_min,
+               std::string init_condition,
+               int rand_seed);
+    virtual void init();
+    virtual void update();
     bool is_openmp_enabled();
     int get_max_threads();
 
@@ -46,13 +49,13 @@ public:
         double min;
     } velocity;
     Boid* boids;
-
-private:
+protected:
+    std::string init_condition;
+    int rand_seed;
     Vector3D *dv;
     Vector3D *dv_coh;
     Vector3D *dv_sep;
     Vector3D *dv_ali;
 };
-
 
 #endif //MASSIVESWARM_BOID_SIMULATION_H

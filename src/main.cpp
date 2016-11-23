@@ -29,8 +29,9 @@ unsigned int T;
 double FIELD_SIZE;
 
 bool is_little_endian;
-BoidSimulation boid_sim;
+BoidSimulation* boid_sim;
 std::ofstream fout;
+
 
 template <typename T> T fix_byte_order(T value) {
     if (is_little_endian) {
@@ -59,42 +60,40 @@ void print_settings()
 {
     cout << "N: " << N << endl
          << "T: " << T << endl
-         << "field size: " << boid_sim.field_size << endl
+         << "field size: " << boid_sim->field_size << endl
          << "#Separation" << endl
-         << "force: " << boid_sim.separation.force_coefficient << endl
-         << "area distance: " << boid_sim.separation.sight_distance << endl
-         << "area angle: " << boid_sim.separation.sight_agnle << endl
+         << "force: " << boid_sim->separation.force_coefficient << endl
+         << "area distance: " << boid_sim->separation.sight_distance << endl
+         << "area angle: " << boid_sim->separation.sight_agnle << endl
          << "#Alignment" << endl
-         << "force: " << boid_sim.alignment.force_coefficient << endl
-         << "area distance: " <<  boid_sim.alignment.sight_distance << endl
-         << "area angle: " << boid_sim.alignment.sight_agnle << endl
+         << "force: " << boid_sim->alignment.force_coefficient << endl
+         << "area distance: " <<  boid_sim->alignment.sight_distance << endl
+         << "area angle: " << boid_sim->alignment.sight_agnle << endl
          << "#Cohesion" << endl
-         << "force: " << boid_sim.cohesion.force_coefficient << endl
-         << "area distance: " << boid_sim.cohesion.sight_distance << endl
-         << "area angle: " << boid_sim.cohesion.sight_agnle << endl
+         << "force: " << boid_sim->cohesion.force_coefficient << endl
+         << "area distance: " << boid_sim->cohesion.sight_distance << endl
+         << "area angle: " << boid_sim->cohesion.sight_agnle << endl
          << "#Velocity" << endl
-         << "min: " << boid_sim.velocity.min << endl
-         << "max: " << boid_sim.velocity.max << endl
+         << "min: " << boid_sim->velocity.min << endl
+         << "max: " << boid_sim->velocity.max << endl
          << "#OpenMP: ";
-    if (boid_sim.is_openmp_enabled()) {
-        cout << "Enabled (max threads = " << boid_sim.get_max_threads() << ")" << endl;
+    if (boid_sim->is_openmp_enabled()) {
+        cout << "Enabled (max threads = " << boid_sim->get_max_threads() << ")" << endl;
     } else {
         cout << "Disabled" << endl;
     }
 }
 
 
-int main(int argc, char *argv[])
+void setup_boid_simulation(BoidSimulation* boid_sim, int argc, char *argv[])
 {
-    string fname = argv[1];
     N = (unsigned int)(atoi(argv[2]));
     T = (unsigned int)(atoi(argv[3]));
     string setting_fname = argv[4];
 
-    // setup simulation
     ptree pt;
     read_ini(setting_fname, pt);
-    boid_sim.setup(N,
+    boid_sim->setup(N,
                    pt.get<double>("Global.FIELD_SIZE"),
                    pt.get<double>("Separation.SIGHT_DISTANCE"),
                    pt.get<double>("Separation.SIGHT_ANGLE"),
@@ -106,41 +105,55 @@ int main(int argc, char *argv[])
                    pt.get<double>("Cohesion.SIGHT_ANGLE"),
                    pt.get<double>("Cohesion.FORCE_COEFFICIENT"),
                    pt.get<double>("Velocity.MAX"),
-                   pt.get<double>("Velocity.MIN"));
-    print_settings();
-    check_endianness();
+                    pt.get<double>("Velocity.MIN"),
+                    pt.get<string>("Global.INIT"),
+                    pt.get<int>("Global.RANDOM_SEED"));
+}
 
-    // write header of output data
+
+void setup_output_data_file(string fname)
+{
+    check_endianness();
     fout.open(fname.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
     if (!fout) {
-        std::cerr << "Couldn't open " << fname << endl;
-        return -1;
+        std::cerr << "Couldn't open output file." << endl;
+        exit(-1);
     }
     data_file_header_v01 header;
     header.N = fix_byte_order(N);
     header.T = fix_byte_order(T);
     header.fps = fix_byte_order(FPS);
     fout.write((char*)&header,sizeof(header));
+}
+
+
+int main_singlenode(int argc, char *argv[])
+{
+    boid_sim = new BoidSimulation();
+
+    setup_boid_simulation(boid_sim, argc, argv);
+    print_settings();
+    setup_output_data_file(argv[1]);
 
     // simulation
-    string sim_init_condition = pt.get<string>("Global.INIT");
-    int rand_seed = pt.get<int>("Global.RANDOM_SEED");
-    boid_sim.init(sim_init_condition, rand_seed);
+    boid_sim->init();
     std::cout << "simulation start." << std::endl;
+    float x, y, z;
     for (unsigned int t=0; t<T; t++) {
         for(int i=0; i<N; i++){
-            float x = fix_byte_order((float)boid_sim.boids[i].position.x);
-            float y = fix_byte_order((float)boid_sim.boids[i].position.y);
-            float z = fix_byte_order((float)boid_sim.boids[i].position.z);
+            x = fix_byte_order((float)boid_sim->boids[i].position.x);
+            y = fix_byte_order((float)boid_sim->boids[i].position.y);
+            z = fix_byte_order((float)boid_sim->boids[i].position.z);
             fout.write((char*)&x, sizeof(x));
             fout.write((char*)&y, sizeof(y));
             fout.write((char*)&z, sizeof(z));
         }
-        boid_sim.update();
+        boid_sim->update();
         cout << t << "/" << T << "\r" << flush;
     }
     std::cout << "simulation end." << std::endl;
     fout.close();
+    delete boid_sim;
     return 0;
 }
 

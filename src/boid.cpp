@@ -40,6 +40,49 @@ bool Boid::isInsideArea(Boid &_b, double _sighe_distance, double _sight_angle) {
 	}
 	return false;
 }
+
+
+void Boid::set(double x, double y, double z, double vx, double vy, double vz)
+{
+	position.x = x;
+	position.y = y;
+	position.z = z;
+	velocity.x = x;
+	velocity.y = y;
+	velocity.z = z;
+}
+
+
+void Boid::get(double* x, double* y, double* z, double* vx, double* vy, double* vz)
+{
+	*x = position.x;
+	*y = position.y;
+	*z = position.z;
+	*vx = velocity.x;
+	*vy = velocity.y;
+	*vz = velocity.z;
+}
+
+
+void Boid::set_serialized_data(double* buffer)
+{
+	position.x = buffer[0];
+	position.y = buffer[1];
+	position.z = buffer[2];
+	velocity.x = buffer[3];
+	velocity.y = buffer[4];
+	velocity.z = buffer[5];
+}
+
+void Boid::get_serialized_data(double* buffer)
+{
+	buffer[0] = position.x;
+	buffer[1] = position.y;
+	buffer[2] = position.z;
+	buffer[3] = velocity.x;
+	buffer[4] = velocity.y;
+	buffer[5] = velocity.z;
+}
 /*
 bool Boid::isInsideSeparationArea(Boid &_b) {
     return isInsideArea(_b, SIGHT_DISTANCE_SEPARATION, SIGHT_ANGLE_SEPARATION);
