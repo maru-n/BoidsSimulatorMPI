@@ -34,7 +34,7 @@ if ($ENV{Env_base} MATCHES "K-1.2.0-20-1")
             src/boid.cpp
             src/vector3D.cpp
             src/boid_simulation.cpp
-            src/dtype.h)
+            src/dtype.h src/boid_simulation_multinode.cpp src/boid_simulation_multinode.h)
     target_compile_options(MassiveSwarmSimCUI_MPI PRIVATE "-DMPI_ENABLE")
     #endif()
 endif()

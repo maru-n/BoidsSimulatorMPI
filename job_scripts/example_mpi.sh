@@ -15,7 +15,7 @@
 . /work/system/Env_base
 
 export AGENT_NUM=10000
-export TIME_STEP=1800
+export TIME_STEP=30
 export DATA_FILE_NAME=data_${PJM_JOBID}.ptcl
 
 mpiexec ./MassiveSwarmSimCUI_MPI ${DATA_FILE_NAME} ${AGENT_NUM} ${TIME_STEP} example.ini

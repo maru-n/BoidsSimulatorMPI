@@ -9,12 +9,9 @@
 #include <iostream>
 #include "dtype.h"
 #include "boid_simulation.h"
+#include "boid_simulation_multinode.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
-#ifdef MPI_ENABLE
-#include "mpi.h"
-#include <mpi-ext.h>
-#endif
 
 using std::string;
 using std::cout;
@@ -94,17 +91,17 @@ void setup_boid_simulation(BoidSimulation* boid_sim, int argc, char *argv[])
     ptree pt;
     read_ini(setting_fname, pt);
     boid_sim->setup(N,
-                   pt.get<double>("Global.FIELD_SIZE"),
-                   pt.get<double>("Separation.SIGHT_DISTANCE"),
-                   pt.get<double>("Separation.SIGHT_ANGLE"),
-                   pt.get<double>("Separation.FORCE_COEFFICIENT"),
-                   pt.get<double>("Alignment.SIGHT_DISTANCE"),
-                   pt.get<double>("Alignment.SIGHT_ANGLE"),
-                   pt.get<double>("Alignment.FORCE_COEFFICIENT"),
-                   pt.get<double>("Cohesion.SIGHT_DISTANCE"),
-                   pt.get<double>("Cohesion.SIGHT_ANGLE"),
-                   pt.get<double>("Cohesion.FORCE_COEFFICIENT"),
-                   pt.get<double>("Velocity.MAX"),
+                    pt.get<double>("Global.FIELD_SIZE"),
+                    pt.get<double>("Separation.SIGHT_DISTANCE"),
+                    pt.get<double>("Separation.SIGHT_ANGLE"),
+                    pt.get<double>("Separation.FORCE_COEFFICIENT"),
+                    pt.get<double>("Alignment.SIGHT_DISTANCE"),
+                    pt.get<double>("Alignment.SIGHT_ANGLE"),
+                    pt.get<double>("Alignment.FORCE_COEFFICIENT"),
+                    pt.get<double>("Cohesion.SIGHT_DISTANCE"),
+                    pt.get<double>("Cohesion.SIGHT_ANGLE"),
+                    pt.get<double>("Cohesion.FORCE_COEFFICIENT"),
+                    pt.get<double>("Velocity.MAX"),
                     pt.get<double>("Velocity.MIN"),
                     pt.get<string>("Global.INIT"),
                     pt.get<int>("Global.RANDOM_SEED"));
@@ -157,3 +154,57 @@ int main_singlenode(int argc, char *argv[])
     return 0;
 }
 
+
+#ifdef MPI_ENABLE
+int main_multinode(int argc, char *argv[])
+{
+    boid_sim = new BoidSimulationMultinode(argc, argv);
+    setup_boid_simulation(boid_sim, argc, argv);
+    if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
+        print_settings();
+        setup_output_data_file(argv[1]);
+    }
+
+    // simulation
+    boid_sim->init();
+    if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
+        std::cout << "simulation start." << std::endl;
+    }
+    float x, y, z;
+    for (unsigned int t=0; t<T; t++) {
+        dynamic_cast<BoidSimulationMultinode*>(boid_sim)->gather_data();
+        if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
+            for (int i = 0; i < N; i++) {
+                /*
+                x = fix_byte_order((float) boid_sim->boids[i].position.x);
+                y = fix_byte_order((float) boid_sim->boids[i].position.y);
+                z = fix_byte_order((float) boid_sim->boids[i].position.z);
+                 */
+                x = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+0]));
+                y = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+1]));
+                z = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+2]));
+                fout.write((char *) &x, sizeof(x));
+                fout.write((char *) &y, sizeof(y));
+                fout.write((char *) &z, sizeof(z));
+            }
+            //cout << t << "/" << T << "\r" << flush;
+            cout << t << "/" << T << endl;
+        }
+        boid_sim->update();
+    }
+    if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
+        std::cout << "simulation end." << std::endl;
+    }
+    delete boid_sim;
+    return 0;
+}
+#endif
+
+int main(int argc, char *argv[])
+{
+#ifdef MPI_ENABLE
+    return main_multinode(argc, argv);
+#else
+    return main_singlenode(argc, argv);
+#endif
+}
