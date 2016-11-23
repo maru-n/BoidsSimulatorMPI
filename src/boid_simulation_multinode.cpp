@@ -53,17 +53,20 @@ BoidSimulationMultinode::BoidSimulationMultinode(int argc, char *argv[])
 BoidSimulationMultinode::~BoidSimulationMultinode()
 {
     MPI_Finalize();
-    delete[] boid_in_local_area_flag;
-    delete[] boid_in_margin_area_flag;
-    delete[] data_buffer;
     delete[] data_num_buffer;
+    delete[] data_buffer;
+    delete[] data_buffer_swap;
+    delete[] margin_data_buffer;
+    delete[] margin_data_buffer_swap;
 }
 
 void BoidSimulationMultinode::init()
 {
-    boid_in_local_area_flag = new bool[N];
-    boid_in_margin_area_flag = new bool[N];
+    margin_data_buffer = new double[N*6];
+    margin_data_buffer_swap = new double[N*6];
     data_buffer = new double[N*6];
+    data_buffer_swap = new double[N*6];
+
     data_num_buffer = new unsigned int[mpi_size];
     field_size_local_x = field_size / mpi_topology_x;
     field_size_local_y = field_size / mpi_topology_y;
@@ -100,6 +103,7 @@ void BoidSimulationMultinode::init()
 
     double x, y, z, vx, vy, vz;
     data_buffer_count = 0;
+    margin_data_buffer_count = 0;
     for (int i = 0; i < N; ++i) {
         x = data_buffer[i*6+0];
         y = data_buffer[i*6+1];
@@ -112,25 +116,35 @@ void BoidSimulationMultinode::init()
         if ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<margin_x_upper) : (x>=margin_x_lower||x<margin_x_upper)) &&
              (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&x<margin_y_upper) : (y>=margin_y_lower||y<margin_y_upper)) &&
              (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&x<margin_z_upper) : (z>=margin_z_lower||z<margin_z_upper))) {
-            boid_in_margin_area_flag[i] = true;
-        } else {
-            boid_in_margin_area_flag[i] = false;
+            margin_data_buffer[margin_data_buffer_count+0] = x;
+            margin_data_buffer[margin_data_buffer_count+1] = y;
+            margin_data_buffer[margin_data_buffer_count+2] = z;
+            margin_data_buffer[margin_data_buffer_count+3] = vx;
+            margin_data_buffer[margin_data_buffer_count+4] = vy;
+            margin_data_buffer[margin_data_buffer_count+5] = vz;
+            margin_data_buffer_count +=6;
         }
         if (x >= space_x_lower && x < space_x_upper &&
             y >= space_y_lower && y < space_y_upper &&
             z >= space_z_lower && z < space_z_upper) {
-            boid_in_local_area_flag[i] = true;
-            boids[i].get_serialized_data(&data_buffer[data_buffer_count]);
+            data_buffer_swap[data_buffer_count+0] = x;
+            data_buffer_swap[data_buffer_count+1] = y;
+            data_buffer_swap[data_buffer_count+2] = z;
+            data_buffer_swap[data_buffer_count+3] = vx;
+            data_buffer_swap[data_buffer_count+4] = vy;
+            data_buffer_swap[data_buffer_count+5] = vz;
             data_buffer_count += 6;
-        } else {
-            boid_in_local_area_flag[i] = false;
         }
     }
+    double* tmp = data_buffer;
+    data_buffer = data_buffer_swap;
+    data_buffer_swap = tmp;
 }
 
 
 void BoidSimulationMultinode::update()
 {
+    double x, y, z, vx, vy, vz;
 #if defined(_OPENMP) && defined(ENABLE_OPENMP)
 #pragma omp parallel
 #endif
@@ -140,8 +154,9 @@ void BoidSimulationMultinode::update()
 #pragma omp for schedule(guided)
 #endif
     //for(int i=0; i<local_n; i++){
-    for(int i=0; i<N; i++){
-        if (!boid_in_local_area_flag[i]) continue;
+    //for(int i=0; i<N; i++){
+    for(int i=0; i<data_buffer_count/6; i++) {
+        //if (!boid_in_local_area_flag[i]) continue;
         dv_coh[i].x = dv_coh[i].y = dv_coh[i].z =
         dv_sep[i].x = dv_sep[i].y = dv_sep[i].z =
         dv_ali[i].x = dv_ali[i].y = dv_ali[i].z = 0.0;
@@ -149,8 +164,11 @@ void BoidSimulationMultinode::update()
         int neivers_num_sep = 0;
         int neivers_num_ali = 0;
         //for(int j=0; j<local_n; j++){
-        for(int j=0; j<N; j++){
-            if (!boid_in_margin_area_flag[j]) continue;
+        //for(int j=0; j<N; j++){
+        boids[i].set_serialized_data(&data_buffer[i*6]);
+        for(int j=0; j<margin_data_buffer_count/6; j++) {
+            boids[j].set_serialized_data(&margin_data_buffer[j*6]);
+            //if (!boid_in_margin_area_flag[j]) continue;
 
             Vector3D boids_j_pos_tmp = boids[j].position;
 
@@ -206,77 +224,104 @@ void BoidSimulationMultinode::update()
 #pragma omp for schedule(guided)
 #endif
     //for(int i=0; i<local_n; i++) {
-    unsigned int send_data_buffer_count = 0;
-    unsigned int recv_data_buffer_count = 0;
-    double *send_data_buffer = new double[N*6];
-    double *recv_data_buffer = new double[N*6];
-    data_buffer_count = 0;
-    for(int i=0; i<N; i++){
-        if (!boid_in_local_area_flag[i]) continue;
+    for(int i=0; i<data_buffer_count/6; i++) {
+        boids[i].set_serialized_data(&data_buffer[i * 6]);
+        //for(int i=0; i<N; i++){
+        //if (!boid_in_local_area_flag[i]) continue;
 
         //update boid
         boids[i].velocity += dv[i];
-        if(boids[i].velocity.norm()>0. && boids[i].velocity.norm()>velocity.max){
+        if (boids[i].velocity.norm() > 0. && boids[i].velocity.norm() > velocity.max) {
             boids[i].velocity = boids[i].velocity.normalized() * velocity.max;
-        }else if(boids[i].velocity.norm()>0. && boids[i].velocity.norm()<velocity.min){
+        } else if (boids[i].velocity.norm() > 0. && boids[i].velocity.norm() < velocity.min) {
             boids[i].velocity = boids[i].velocity.normalized() * velocity.min;
         }
         boids[i].position += boids[i].velocity;
 
         //Boundary conditon
-        if(boids[i].position.x < 0.0) {
+        if (boids[i].position.x < 0.0) {
             boids[i].position.x = field_size + boids[i].position.x;
-        } else if(boids[i].position.x > field_size) {
+        } else if (boids[i].position.x > field_size) {
             boids[i].position.x = boids[i].position.x - field_size;
         }
-        if(boids[i].position.y < 0.0) {
+        if (boids[i].position.y < 0.0) {
             boids[i].position.y = field_size + boids[i].position.y;
-        } else if(boids[i].position.y > field_size) {
+        } else if (boids[i].position.y > field_size) {
             boids[i].position.y = boids[i].position.y - field_size;
         }
-        if(boids[i].position.z < 0.0) {
+        if (boids[i].position.z < 0.0) {
             boids[i].position.z = field_size + boids[i].position.z;
-        } else if(boids[i].position.z > field_size) {
+        } else if (boids[i].position.z > field_size) {
             boids[i].position.z = boids[i].position.z - field_size;
         }
-        /*
-        if(boids[i].position.x < space_x_lower) {
-            boids[i].position.x = boids[i].position.x + field_size_local_x;
-        } else if(boids[i].position.x >= space_x_upper) {
-            boids[i].position.x = boids[i].position.x - field_size_local_x;
-        }
-        if(boids[i].position.y < space_y_lower) {
-            boids[i].position.y = boids[i].position.y + field_size_local_y;
-        } else if(boids[i].position.y >= space_y_upper) {
-            boids[i].position.y = boids[i].position.y - field_size_local_y;
-        }
-        if(boids[i].position.z < space_z_lower) {
-            boids[i].position.z = boids[i].position.z + field_size_local_z;
-        } else if(boids[i].position.z >= space_z_upper) {
-            boids[i].position.z = boids[i].position.z - field_size_local_z;
-        }
-         */
-
-        if (boids[i].position.x < (space_x_lower+margin_width) || boids[i].position.x >= (space_x_upper-margin_width) ||
-            boids[i].position.y < (space_y_lower+margin_width) || boids[i].position.y >= (space_y_upper-margin_width) ||
-            boids[i].position.z < (space_z_lower+margin_width) || boids[i].position.z >= (space_z_upper-margin_width)) {
-            boids[i].get_serialized_data(&send_data_buffer[send_data_buffer_count]);
-            send_data_buffer_count+=6;
-            boid_in_local_area_flag[i] = false;
-            boid_in_margin_area_flag[i] = false;
-        } else {
-            boids[i].get_serialized_data(&data_buffer[data_buffer_count]);
-            data_buffer_count += 6;
-            boid_in_local_area_flag[i] = true;
-            boid_in_margin_area_flag[i] = true;
-        }
+        boids[i].get_serialized_data(&data_buffer[i * 6]);
     }
 
+    unsigned int send_data_buffer_count = 0;
+    unsigned int recv_data_buffer_count = 0;
+    double *send_data_buffer = new double[N*6];
+    double *recv_data_buffer = new double[N*6];
+    //data_buffer_count = 0;
+
+    unsigned int data_buffer_count_new = 0;
+    unsigned int margin_data_buffer_count_new = 0;
+    for(int i=0; i<data_buffer_count/6; i++) {
+
+        x = data_buffer[i*6+0];
+        y = data_buffer[i*6+1];
+        z = data_buffer[i*6+2];
+        vx = data_buffer[i*6+3];
+        vy = data_buffer[i*6+4];
+        vz = data_buffer[i*6+5];
+
+        if (x < (space_x_lower+margin_width) || x >= (space_x_upper-margin_width) ||
+            y < (space_y_lower+margin_width) || y >= (space_y_upper-margin_width) ||
+            z < (space_z_lower+margin_width) || z >= (space_z_upper-margin_width)) {
+            send_data_buffer[send_data_buffer_count+0] = x;
+            send_data_buffer[send_data_buffer_count+1] = y;
+            send_data_buffer[send_data_buffer_count+2] = z;
+            send_data_buffer[send_data_buffer_count+3] = vx;
+            send_data_buffer[send_data_buffer_count+4] = vy;
+            send_data_buffer[send_data_buffer_count+5] = vz;
+            send_data_buffer_count+=6;
+
+            //boid_in_local_area_flag[i] = false;
+            //boid_in_margin_area_flag[i] = false;
+        } else {
+            //boids[i].get_serialized_data(&data_buffer[data_buffer_count]);
+            data_buffer_swap[data_buffer_count_new+0] = x;
+            data_buffer_swap[data_buffer_count_new+1] = y;
+            data_buffer_swap[data_buffer_count_new+2] = z;
+            data_buffer_swap[data_buffer_count_new+3] = vx;
+            data_buffer_swap[data_buffer_count_new+4] = vy;
+            data_buffer_swap[data_buffer_count_new+5] = vz;
+            data_buffer_count_new += 6;
+            //boid_in_local_area_flag[i] = true;
+            //boid_in_margin_area_flag[i] = true;
+            margin_data_buffer_swap[margin_data_buffer_count_new+0] = x;
+            margin_data_buffer_swap[margin_data_buffer_count_new+1] = y;
+            margin_data_buffer_swap[margin_data_buffer_count_new+2] = z;
+            margin_data_buffer_swap[margin_data_buffer_count_new+3] = vx;
+            margin_data_buffer_swap[margin_data_buffer_count_new+4] = vy;
+            margin_data_buffer_swap[margin_data_buffer_count_new+5] = vz;
+            margin_data_buffer_count_new +=6;
+
+        }
+    }
+    double* tmp;
+    tmp = data_buffer;
+    data_buffer = data_buffer_swap;
+    data_buffer_swap = tmp;
+    data_buffer_count = data_buffer_count_new;
+
+    tmp = margin_data_buffer;
+    margin_data_buffer = margin_data_buffer_swap;
+    margin_data_buffer_swap = tmp;
+    margin_data_buffer_count = margin_data_buffer_count_new;
 
 
     MPI_Request request1[27*2];
     MPI_Request request2[27*2];
-    //MPI_Request request[27*2];
     MPI_Status status[27*2];
     int request_n=0;
     /*
@@ -323,36 +368,40 @@ void BoidSimulationMultinode::update()
     }
     MPI_Waitall(request_n, request2, status);
 
-    double x, y, z, vx, vy, vz;
-    unsigned int l = 0;
-    for (int i = 0; i < N; ++i) {
-        if (boid_in_local_area_flag[i]) continue;
-        x = recv_data_buffer[l+0];
-        y = recv_data_buffer[l+1];
-        z = recv_data_buffer[l+2];
-        vx = recv_data_buffer[l+3];
-        vy = recv_data_buffer[l+4];
-        vz = recv_data_buffer[l+5];
-        boids[i].set(x, y, z, vx, vy, vz);
+
+    for (int i = 0; i < recv_data_buffer_count/6; i++) {
+        x = recv_data_buffer[i*6+0];
+        y = recv_data_buffer[i*6+1];
+        z = recv_data_buffer[i*6+2];
+        vx = recv_data_buffer[i*6+3];
+        vy = recv_data_buffer[i*6+4];
+        vz = recv_data_buffer[i*6+5];
+
         if ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<margin_x_upper) : (x>=margin_x_lower||x<margin_x_upper)) &&
              (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&x<margin_y_upper) : (y>=margin_y_lower||y<margin_y_upper)) &&
              (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&x<margin_z_upper) : (z>=margin_z_lower||z<margin_z_upper))) {
-            boid_in_margin_area_flag[i] = true;
-        } else {
-            boid_in_margin_area_flag[i] = false;
+            margin_data_buffer[margin_data_buffer_count+0] = x;
+            margin_data_buffer[margin_data_buffer_count+1] = y;
+            margin_data_buffer[margin_data_buffer_count+2] = z;
+            margin_data_buffer[margin_data_buffer_count+3] = vx;
+            margin_data_buffer[margin_data_buffer_count+4] = vy;
+            margin_data_buffer[margin_data_buffer_count+5] = vz;
+            margin_data_buffer_count +=6;
         }
         if (x >= space_x_lower && x < space_x_upper &&
             y >= space_y_lower && y < space_y_upper &&
             z >= space_z_lower && z < space_z_upper) {
-            boid_in_local_area_flag[i] = true;
-            boids[i].get_serialized_data(&data_buffer[data_buffer_count]);
+            data_buffer[data_buffer_count+0] = x;
+            data_buffer[data_buffer_count+1] = y;
+            data_buffer[data_buffer_count+2] = z;
+            data_buffer[data_buffer_count+3] = vx;
+            data_buffer[data_buffer_count+4] = vy;
+            data_buffer[data_buffer_count+5] = vz;
             data_buffer_count += 6;
-        } else {
-            boid_in_local_area_flag[i] = false;
         }
-        l += 6;
-        if (l >= recv_data_buffer_count) break;
+
     }
+
     delete[] send_data_buffer;
     delete[] recv_data_buffer;
 }
@@ -363,12 +412,10 @@ void BoidSimulationMultinode::gather_data()
     if (is_master) {
         int n = data_num_buffer[0];
         for (int i = 1; i < mpi_size; ++i) {
-            std::cout << n << ",";
             MPI_Status status;
             MPI_Recv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
             n += data_num_buffer[i];
         }
-        std::cout << n << std::endl;
         /*
         for (int i=0; i<N; i++) {
             boids[i].set_serialized_data(&data_buffer[i*6]);

@@ -18,9 +18,12 @@ public:
     void gather_data();
     double* data_buffer;
 protected:
+    double* data_buffer_swap;
+    double* margin_data_buffer;
+    double* margin_data_buffer_swap;
     bool* boid_in_local_area_flag;
     bool* boid_in_margin_area_flag;
-
+    unsigned int margin_data_buffer_count;
     unsigned int data_buffer_count;
     unsigned int* data_num_buffer;
     //unsigned int local_n;
