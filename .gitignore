@@ -4,3 +4,4 @@ data
 k_scripts
 job_scripts/*
 job_scripts/example.sh
+job_scripts/example_mpi.sh
