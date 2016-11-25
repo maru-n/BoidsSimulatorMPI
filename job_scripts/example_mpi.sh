@@ -9,7 +9,7 @@
 #PJM --stgin "rank=* ./settings/*.ini %r:./"
 #PJM --stgout "rank=0 %r:./data*.ptcl /data/hp160264/k03378/"
 #PJM -s
-#PJM --name testjob_mpi
+#PJM --name example_mpi
 #
 
 . /work/system/Env_base
@@ -19,4 +19,4 @@ export TIME_STEP=1800
 export DATA_FILE_NAME=data_${PJM_JOBID}.ptcl
 
 mpiexec ./boidsim_mpi ${DATA_FILE_NAME} ${AGENT_NUM} ${TIME_STEP} example.ini
-#mpiexec –mca mpi_print_stats 1 ./MassiveSwarmSimCUI_MPI ${DATA_FILE_NAME} ${AGENT_NUM} ${TIME_STEP} *.ini
+#mpiexec –mca mpi_print_stats 1 ./boidsim_mpi ${DATA_FILE_NAME} ${AGENT_NUM} ${TIME_STEP} example.ini
