@@ -439,12 +439,6 @@ void BoidSimulationMultinode::gather_data()
             MPI_Recv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
             n += data_num_buffer[i];
         }
-        /*
-        for (int i=0; i<N; i++) {
-            boids[i].set_serialized_data(&data_buffer[i*6]);
-        }
-         */
-
     } else {
         MPI_Send(data_buffer, data_buffer_count, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
     }
