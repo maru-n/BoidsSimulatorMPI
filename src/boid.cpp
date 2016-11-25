@@ -47,9 +47,9 @@ void Boid::set(double x, double y, double z, double vx, double vy, double vz)
 	position.x = x;
 	position.y = y;
 	position.z = z;
-	velocity.x = x;
-	velocity.y = y;
-	velocity.z = z;
+	velocity.x = vx;
+	velocity.y = vy;
+	velocity.z = vz;
 }
 
 

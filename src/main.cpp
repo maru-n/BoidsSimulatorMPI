@@ -57,7 +57,7 @@ void print_settings()
 {
     cout << "N: " << N << endl
          << "T: " << T << endl
-         << "field size: " << boid_sim->field_size << endl
+         << "field size: " << boid_sim->field_size_X << "," << boid_sim->field_size_Y << "," << boid_sim->field_size_Z << endl
          << "#Separation" << endl
          << "force: " << boid_sim->separation.force_coefficient << endl
          << "area distance: " << boid_sim->separation.sight_distance << endl
@@ -176,13 +176,16 @@ int main_multinode(int argc, char *argv[])
         if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
             for (int i = 0; i < N; i++) {
                 /*
+
                 x = fix_byte_order((float) boid_sim->boids[i].position.x);
                 y = fix_byte_order((float) boid_sim->boids[i].position.y);
                 z = fix_byte_order((float) boid_sim->boids[i].position.z);
-                 */
+                */
+
                 x = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+0]));
                 y = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+1]));
                 z = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+2]));
+
                 fout.write((char *) &x, sizeof(x));
                 fout.write((char *) &y, sizeof(y));
                 fout.write((char *) &z, sizeof(z));

@@ -41,9 +41,8 @@ public:
 
     unsigned int N;
     double field_size;
-    interaction_parameters separation;
-    interaction_parameters alignment;
-    interaction_parameters cohesion;
+    double field_size_X, field_size_Y, field_size_Z;
+    interaction_parameters separation, alignment, cohesion;
     struct {
         double max;
         double min;

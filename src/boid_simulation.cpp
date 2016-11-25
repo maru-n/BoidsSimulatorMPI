@@ -43,6 +43,7 @@ void BoidSimulation::setup(unsigned int number_of_agents,
                            std::string init_condition,
                            int rand_seed)
 {
+    field_size_X = field_size_Y = field_size_Z = field_size;
     this->field_size = field_size;
     separation = {separation_sight_distance, separation_sight_angle, separation_force_coefficient};
     alignment = {alignment_sight_distance, alignment_sight_angle, alignment_force_coefficient};
@@ -63,12 +64,12 @@ void BoidSimulation::init()
     srand(rand_seed);
     if (init_condition == "test") {
         for (int i = 0; i < N; i++) {
-            boids[i].position.x = field_size * 3 / 8 + drand48() * field_size / 4;
-            boids[i].position.y = field_size * 3 / 8 + drand48() * field_size / 4;
+            boids[i].position.x = field_size_X * 3 / 8 + drand48() * field_size_X / 4;
+            boids[i].position.y = field_size_Y * 3 / 8 + drand48() * field_size_Y / 4;
             if (drand48() > 0.5) {
-                boids[i].position.z = drand48() * field_size / 4 + field_size * 3 / 4;
+                boids[i].position.z = drand48() * field_size_Z / 4 + field_size_Z * 3 / 4;
             } else {
-                boids[i].position.z = drand48() * field_size / 4;
+                boids[i].position.z = drand48() * field_size_Z / 4;
             }
 
             double v = drand48() * (velocity.max - velocity.min) + velocity.min;
@@ -80,9 +81,9 @@ void BoidSimulation::init()
         }
     } else if (init_condition == "random_uniform") {
         for (int i = 0; i < N; i++) {
-            boids[i].position.x = field_size * drand48();
-            boids[i].position.y = field_size * drand48();
-            boids[i].position.z = field_size * drand48();
+            boids[i].position.x = field_size_X * drand48();
+            boids[i].position.y = field_size_Y * drand48();
+            boids[i].position.z = field_size_Z * drand48();
             double v = drand48() * (velocity.max - velocity.min) + velocity.min;
             double th1 = drand48() * M_PI;
             double th2 = drand48() * 2.0 * M_PI;
@@ -115,20 +116,20 @@ void BoidSimulation::update()
         for(int j=0; j<N; j++){
             Vector3D boids_j_pos_tmp = boids[j].position;
 
-            if ((boids_j_pos_tmp.x - boids[i].position.x) > field_size/2) {
-                boids_j_pos_tmp.x -= field_size;
-            } else if (boids[i].position.x - boids_j_pos_tmp.x > field_size/2) {
-                boids_j_pos_tmp.x += field_size;
+            if ((boids_j_pos_tmp.x - boids[i].position.x) > field_size_X/2) {
+                boids_j_pos_tmp.x -= field_size_X;
+            } else if (boids[i].position.x - boids_j_pos_tmp.x > field_size_X/2) {
+                boids_j_pos_tmp.x += field_size_X;
             }
-            if ((boids_j_pos_tmp.y - boids[i].position.y) > field_size/2) {
-                boids_j_pos_tmp.y -= field_size;
-            } else if (boids[i].position.y - boids_j_pos_tmp.y > field_size/2) {
-                boids_j_pos_tmp.y += field_size;
+            if ((boids_j_pos_tmp.y - boids[i].position.y) > field_size_Y/2) {
+                boids_j_pos_tmp.y -= field_size_Y;
+            } else if (boids[i].position.y - boids_j_pos_tmp.y > field_size_Y/2) {
+                boids_j_pos_tmp.y += field_size_Y;
             }
-            if ((boids_j_pos_tmp.z - boids[i].position.z) > field_size/2) {
-                boids_j_pos_tmp.z -= field_size;
-            } else if (boids[i].position.z - boids_j_pos_tmp.z > field_size/2) {
-                boids_j_pos_tmp.z += field_size;
+            if ((boids_j_pos_tmp.z - boids[i].position.z) > field_size_Z/2) {
+                boids_j_pos_tmp.z -= field_size_Z;
+            } else if (boids[i].position.z - boids_j_pos_tmp.z > field_size_Z/2) {
+                boids_j_pos_tmp.z += field_size_Z;
             }
 
             Boid target_boid(boids_j_pos_tmp);
@@ -180,19 +181,19 @@ void BoidSimulation::update()
 
         //Boundary conditon
         if(boids[i].position.x < 0.0) {
-            boids[i].position.x = field_size + boids[i].position.x;
-        } else if(boids[i].position.x > field_size) {
-            boids[i].position.x = boids[i].position.x - field_size;
+            boids[i].position.x = field_size_X + boids[i].position.x;
+        } else if(boids[i].position.x > field_size_X) {
+            boids[i].position.x = boids[i].position.x - field_size_X;
         }
         if(boids[i].position.y < 0.0) {
-            boids[i].position.y = field_size + boids[i].position.y;
-        } else if(boids[i].position.y > field_size) {
-            boids[i].position.y = boids[i].position.y - field_size;
+            boids[i].position.y = field_size_Y + boids[i].position.y;
+        } else if(boids[i].position.y > field_size_Y) {
+            boids[i].position.y = boids[i].position.y - field_size_Y;
         }
         if(boids[i].position.z < 0.0) {
-            boids[i].position.z = field_size + boids[i].position.z;
-        } else if(boids[i].position.z > field_size) {
-            boids[i].position.z = boids[i].position.z - field_size;
+            boids[i].position.z = field_size_Z + boids[i].position.z;
+        } else if(boids[i].position.z > field_size_Z) {
+            boids[i].position.z = boids[i].position.z - field_size_Z;
         }
     }
 }
