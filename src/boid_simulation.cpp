@@ -11,8 +11,7 @@
 #include <mpi-ext.h>
 #endif
 
-#define ENABLE_OPENMP
-#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#if defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -99,11 +98,11 @@ void BoidSimulation::init()
 
 void BoidSimulation::update()
 {
-#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#ifdef _OPENMP
 #pragma omp parallel
 #endif
 
-#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#ifdef _OPENMP
 #pragma omp for
 #endif
     for(int i=0; i<N; i++){
@@ -163,7 +162,7 @@ void BoidSimulation::update()
         dv[i] = cohesion.force_coefficient*dv_coh[i] + separation.force_coefficient*dv_sep[i] + alignment.force_coefficient*dv_ali[i];
     }
 
-#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#ifdef _OPENMP
 #pragma omp for
 #endif
     for(int i=0; i<N; i++) {
@@ -198,9 +197,16 @@ void BoidSimulation::update()
     }
 }
 
+int BoidSimulation::get(unsigned int id, double* x, double* y, double* z)
+{
+    *x = boids[id].position.x;
+    *y = boids[id].position.y;
+    *z = boids[id].position.z;
+}
+
 bool BoidSimulation::is_openmp_enabled()
 {
-#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#ifdef _OPENMP
     return true;
 #else
     return false;
@@ -209,7 +215,7 @@ bool BoidSimulation::is_openmp_enabled()
 
 int BoidSimulation::get_max_threads()
 {
-#if defined(_OPENMP) && defined(ENABLE_OPENMP)
+#ifdef _OPENMP
     return omp_get_max_threads();
 #else
     return -1;

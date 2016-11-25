@@ -36,6 +36,7 @@ public:
                int rand_seed);
     virtual void init();
     virtual void update();
+    virtual int get(unsigned int id, double* x, double* y, double* z);
     bool is_openmp_enabled();
     int get_max_threads();
 

@@ -9,7 +9,7 @@
 #include <iostream>
 #include "dtype.h"
 #include "boid_simulation.h"
-#include "boid_simulation_multinode.h"
+#include "boid_simulation_mpi.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
@@ -135,15 +135,17 @@ int main_singlenode(int argc, char *argv[])
     // simulation
     boid_sim->init();
     std::cout << "simulation start." << std::endl;
-    float x, y, z;
+    double x, y, z;
+    float fx, fy, fz;
     for (unsigned int t=0; t<T; t++) {
         for(int i=0; i<N; i++){
-            x = fix_byte_order((float)boid_sim->boids[i].position.x);
-            y = fix_byte_order((float)boid_sim->boids[i].position.y);
-            z = fix_byte_order((float)boid_sim->boids[i].position.z);
-            fout.write((char*)&x, sizeof(x));
-            fout.write((char*)&y, sizeof(y));
-            fout.write((char*)&z, sizeof(z));
+            boid_sim->get(i, &x, &y, &z);
+            fx = fix_byte_order(float(x));
+            fy = fix_byte_order(float(y));
+            fz = fix_byte_order(float(z));
+            fout.write((char*)&fx, sizeof(fx));
+            fout.write((char*)&fy, sizeof(fy));
+            fout.write((char*)&fz, sizeof(fz));
         }
         boid_sim->update();
         cout << t << "/" << T << "\r" << flush;
@@ -154,8 +156,7 @@ int main_singlenode(int argc, char *argv[])
     return 0;
 }
 
-
-#ifdef MPI_ENABLE
+#ifdef _MPI
 int main_multinode(int argc, char *argv[])
 {
     boid_sim = new BoidSimulationMultinode(argc, argv);
@@ -170,25 +171,19 @@ int main_multinode(int argc, char *argv[])
     if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
         std::cout << "simulation start." << std::endl;
     }
-    float x, y, z;
+    double x, y, z;
+    float fx, fy, fz;
     for (unsigned int t=0; t<T; t++) {
         dynamic_cast<BoidSimulationMultinode*>(boid_sim)->gather_data();
         if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
             for (int i = 0; i < N; i++) {
-                /*
-
-                x = fix_byte_order((float) boid_sim->boids[i].position.x);
-                y = fix_byte_order((float) boid_sim->boids[i].position.y);
-                z = fix_byte_order((float) boid_sim->boids[i].position.z);
-                */
-
-                x = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+0]));
-                y = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+1]));
-                z = fix_byte_order(float(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->data_buffer[i*6+2]));
-
-                fout.write((char *) &x, sizeof(x));
-                fout.write((char *) &y, sizeof(y));
-                fout.write((char *) &z, sizeof(z));
+                boid_sim->get(i, &x, &y, &z);
+                fx = fix_byte_order(float(x));
+                fy = fix_byte_order(float(y));
+                fz = fix_byte_order(float(z));
+                fout.write((char*)&fx, sizeof(fx));
+                fout.write((char*)&fy, sizeof(fy));
+                fout.write((char*)&fz, sizeof(fz));
             }
             //cout << t << "/" << T << "\r" << flush;
             cout << t << "/" << T << endl;
@@ -203,9 +198,10 @@ int main_multinode(int argc, char *argv[])
 }
 #endif
 
+
 int main(int argc, char *argv[])
 {
-#ifdef MPI_ENABLE
+#ifdef _MPI
     return main_multinode(argc, argv);
 #else
     return main_singlenode(argc, argv);

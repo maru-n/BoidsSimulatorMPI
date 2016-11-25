@@ -1,14 +1,15 @@
-#cmake_minimum_required(VERSION 2.6)
 cmake_minimum_required(VERSION 3.6)
 
 project(MassiveSwarm)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
+# compiler options on K
 if ($ENV{Env_base} MATCHES "K-1.2.0-20-1")
-    set(K_LOCAL "$ENV{HOME}/local")
-    #set(K_C_CXX_FLAGS "-Kfast -Kparallel -Kopenmp -Koptmsg=2 -V -Nsrc -Nsta -L${K_LOCAL}/lib -I${K_LOCAL}/include")
-    set(K_C_CXX_FLAGS   "-w -Kfast -Kparallel -Kopenmp -Koptmsg=1 -L${K_LOCAL}/lib -I${K_LOCAL}/include")
+    set(K_C_CXX_FLAGS "-Xg -D_K_ -L$ENV{HOME}/local/lib -I$ENV{HOME}/local/include")
+    #set(K_C_CXX_FLAGS "${K_C_CXX_FLAGS} -Kfast -Kparallel -Koptmsg=2 -V -Nsrc -Nsta")
+    #set(K_C_CXX_FLAGS "${K_C_CXX_FLAGS} -Kfast -Kparallel -Koptmsg=1 -w")
+    set(K_C_CXX_FLAGS "${K_C_CXX_FLAGS} -Kfast -Kparallel -w")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${K_C_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${K_C_CXX_FLAGS}")
 endif()
@@ -19,29 +20,27 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-add_executable(MassiveSwarmSimCUI
+find_package( MPI )
+
+add_executable(boidsim
         src/main.cpp
         src/boid.cpp
         src/vector3D.cpp
         src/boid_simulation.cpp
         src/dtype.h)
 
-if ($ENV{Env_base} MATCHES "K-1.2.0-20-1")
-    #find_package( MPI )
-    #if (MPI_FOUND)
-    add_executable(MassiveSwarmSimCUI_MPI
+if (MPI_FOUND)
+    add_executable(boidsim_mpi
             src/main.cpp
             src/boid.cpp
             src/vector3D.cpp
             src/boid_simulation.cpp
-            src/dtype.h src/boid_simulation_multinode.cpp src/boid_simulation_multinode.h)
-    target_compile_options(MassiveSwarmSimCUI_MPI PRIVATE "-DMPI_ENABLE")
-    #endif()
+            src/boid_simulation_mpi.cpp)
+    target_compile_options(boidsim_mpi PRIVATE "-D_MPI")
 endif()
 
-add_executable(MassiveSwarmSimCUI_legacy
+add_executable(boidsim_legacy
         src/legacy/main.cpp
         src/legacy/boid.cpp
         src/legacy/vector3D.cpp
         )
-

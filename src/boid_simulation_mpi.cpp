@@ -3,7 +3,7 @@
 //
 
 #include "boid.h"
-#include "boid_simulation_multinode.h"
+#include "boid_simulation_mpi.h"
 #include "mpi.h"
 #include <mpi-ext.h>
 
@@ -12,11 +12,16 @@ using namespace std;
 BoidSimulationMultinode::BoidSimulationMultinode(int argc, char *argv[])
 {
     MPI_Init(&argc, &argv);
-    FJMPI_Topology_get_dimension(&mpi_dim);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#ifdef _K_
+    FJMPI_Topology_get_dimension(&mpi_dim);
     FJMPI_Topology_get_shape(&mpi_topology_x, &mpi_topology_y, &mpi_topology_z);
     FJMPI_Topology_rank2xyz(mpi_rank, &mpi_position_x, &mpi_position_y, &mpi_position_z);
+#else
+    mpi_dim = 3;
+    std::cout << "MPI:" << mpi_size << ":" << mpi_rank << std::endl;
+#endif
     is_master = (mpi_rank == 0);
     if(mpi_dim != 3) {
         std::cerr << "Invalid node topology." << std::endl;
@@ -32,7 +37,11 @@ BoidSimulationMultinode::BoidSimulationMultinode(int argc, char *argv[])
                 int n_y = (mpi_position_y+mpi_topology_y+j-1)%mpi_topology_y;
                 int n_z = (mpi_position_z+mpi_topology_z+k-1)%mpi_topology_z;
                 int r;
+#ifdef _K_
                 FJMPI_Topology_xyz2rank(n_x, n_y, n_z, &r);
+#else
+
+#endif
                 bool new_rank = true;
                 for (int l = 0; l < neighborhood_num; ++l) {
                     if (neighborhood_rank[l] == r) {
@@ -410,6 +419,14 @@ void BoidSimulationMultinode::update()
 
     delete[] send_data_buffer;
     delete[] recv_data_buffer;
+}
+
+int BoidSimulationMultinode::get(unsigned int id, double* x, double* y, double* z)
+{
+    *x = data_buffer[6*id+0];
+    *y = data_buffer[6*id+1];
+    *z = data_buffer[6*id+2];
+    return 0;
 }
 
 void BoidSimulationMultinode::gather_data()
