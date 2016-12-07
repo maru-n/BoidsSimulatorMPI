@@ -7,7 +7,7 @@
 #PJM --stg-transfiles all
 #PJM --stgin "rank=* ./boidsim_mpi %r:./"
 #PJM --stgin "rank=* ./settings/*.ini %r:./"
-#PJM --stgout "rank=0 %r:./data*.ptcl /data/hp160264/k03378/"
+#PJM --stgout "rank=0 %r:./*.ptcl /data/hp160264/k03378/"
 #PJM -s
 #PJM --name example_mpi
 #

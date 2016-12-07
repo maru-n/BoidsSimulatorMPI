@@ -148,7 +148,7 @@ int main_singlenode(int argc, char *argv[])
             fout.write((char*)&fz, sizeof(fz));
         }
         boid_sim->update();
-        cout << t << "/" << T << "\r" << flush;
+        cout << " " << t << "/" << T << "\r" << flush;
     }
     std::cout << "simulation end." << std::endl;
     fout.close();

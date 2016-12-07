@@ -5,7 +5,7 @@
 #PJM --stg-transfiles all
 #PJM --stgin "./boidsim ./"
 #PJM --stgin "./settings/*.ini ./"
-#PJM --stgout "./data*.ptcl /data/hp160264/k03378/"
+#PJM --stgout "./*.ptcl /data/hp160264/k03378/"
 #PJM -s
 #PJM --name example
 #

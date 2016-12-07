@@ -202,6 +202,7 @@ int BoidSimulation::get(unsigned int id, double* x, double* y, double* z)
     *x = boids[id].position.x;
     *y = boids[id].position.y;
     *z = boids[id].position.z;
+    return 0;
 }
 
 bool BoidSimulation::is_openmp_enabled()
