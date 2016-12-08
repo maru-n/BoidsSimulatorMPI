@@ -5,3 +5,4 @@ k_scripts
 job_scripts/*
 !example.sh
 !example_mpi.sh
+bin

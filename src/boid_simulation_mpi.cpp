@@ -9,19 +9,53 @@
 
 using namespace std;
 
+int topology_get_dimension(int *size)
+{
+#ifdef __FCC_VERSION
+    return FJMPI_Topology_get_dimension(size);
+#else
+    *size = 3;
+    return 0;
+#endif
+}
+
+int topology_get_shape(int *x, int *y, int *z)
+{
+#ifdef __FCC_VERSION
+    return FJMPI_Topology_get_shape(x, y, z);
+#else
+    return 0;
+#endif
+}
+
+int topology_rank2xyz(int rank, int *x, int *y, int *z)
+{
+#ifdef __FCC_VERSION
+    return FJMPI_Topology_rank2xyz(rank, x, y, z);
+#else
+    return 0;
+#endif
+}
+
+int topology_xyz2rank(int x, int y, int z, int *rank)
+{
+#ifdef __FCC_VERSION
+    return FJMPI_Topology_xyz2rank(x, y, z, rank);
+#else
+    return 0;
+#endif
+}
+
+
 BoidSimulationMultinode::BoidSimulationMultinode(int argc, char *argv[])
 {
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-#ifdef _K_
-    FJMPI_Topology_get_dimension(&mpi_dim);
-    FJMPI_Topology_get_shape(&mpi_topology_x, &mpi_topology_y, &mpi_topology_z);
-    FJMPI_Topology_rank2xyz(mpi_rank, &mpi_position_x, &mpi_position_y, &mpi_position_z);
-#else
-    mpi_dim = 3;
-    std::cout << "MPI:" << mpi_size << ":" << mpi_rank << std::endl;
-#endif
+
+    topology_get_dimension(&mpi_dim);
+    topology_get_shape(&mpi_topology_x, &mpi_topology_y, &mpi_topology_z);
+    topology_rank2xyz(mpi_rank, &mpi_position_x, &mpi_position_y, &mpi_position_z);
     is_master = (mpi_rank == 0);
     if(mpi_dim != 3) {
         std::cerr << "Invalid node topology." << std::endl;
@@ -37,11 +71,7 @@ BoidSimulationMultinode::BoidSimulationMultinode(int argc, char *argv[])
                 int n_y = (mpi_position_y+mpi_topology_y+j-1)%mpi_topology_y;
                 int n_z = (mpi_position_z+mpi_topology_z+k-1)%mpi_topology_z;
                 int r;
-#ifdef _K_
-                FJMPI_Topology_xyz2rank(n_x, n_y, n_z, &r);
-#else
-
-#endif
+                topology_xyz2rank(n_x, n_y, n_z, &r);
                 bool new_rank = true;
                 for (int l = 0; l < neighborhood_num; ++l) {
                     if (neighborhood_rank[l] == r) {

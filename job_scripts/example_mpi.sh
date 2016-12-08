@@ -5,7 +5,7 @@
 #PJM --mpi "rank-map-bynode=XYZ"
 #PJM --mpi "use-rankdir"
 #PJM --stg-transfiles all
-#PJM --stgin "rank=* ./boidsim_mpi %r:./"
+#PJM --stgin "rank=* ./bin/boidsim_mpi %r:./"
 #PJM --stgin "rank=* ./settings/*.ini %r:./"
 #PJM --stgout "rank=0 %r:./*.ptcl /data/hp160264/k03378/"
 #PJM -s
@@ -13,6 +13,7 @@
 #
 
 . /work/system/Env_base
+export LD_LIBRARY_PATH=/opt/rist/boost-1.53.0/lib:$LD_LIBRARY_PATH
 
 export AGENT_NUM=10000
 export TIME_STEP=1800
