@@ -47,7 +47,7 @@ int topology_xyz2rank(int x, int y, int z, int *rank)
 }
 
 
-BoidSimulationMultinode::BoidSimulationMultinode(int argc, char *argv[])
+BoidSimulationMultinode::BoidSimulationMultinode(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -446,6 +446,7 @@ void BoidSimulationMultinode::update()
 
 
     //std::cout << mpi_rank << ": n:" << data_buffer_count << ": mn" << margin_data_buffer_count << std::endl;
+    this->gather_data();
 
     delete[] send_data_buffer;
     delete[] recv_data_buffer;

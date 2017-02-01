@@ -6,13 +6,8 @@
 #define MASSIVESWARM_BOID_SIMULATION_H
 
 #include "boid.h"
+#include "dtype.h"
 #include "vector3D.h"
-
-typedef struct {
-    double sight_distance;
-    double sight_agnle;
-    double force_coefficient;
-} interaction_parameters;
 
 
 class BoidSimulation {
@@ -37,17 +32,14 @@ public:
     virtual void init();
     virtual void update();
     virtual int get(unsigned int id, double* x, double* y, double* z);
-    bool is_openmp_enabled();
-    int get_max_threads();
+    bool is_openmp_enabled() const;
+    int get_max_threads() const;
 
     unsigned int N;
     double field_size;
     double field_size_X, field_size_Y, field_size_Z;
     interaction_parameters separation, alignment, cohesion;
-    struct {
-        double max;
-        double min;
-    } velocity;
+    velocity_parameters velocity;
     Boid* boids;
 protected:
     std::string init_condition;
@@ -57,5 +49,7 @@ protected:
     Vector3D *dv_sep;
     Vector3D *dv_ali;
 };
+
+std::ostream& operator<<(std::ostream& stream, const BoidSimulation& boidsim);
 
 #endif //MASSIVESWARM_BOID_SIMULATION_H

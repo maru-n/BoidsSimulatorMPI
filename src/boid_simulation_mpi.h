@@ -9,16 +9,18 @@
 
 class BoidSimulationMultinode: public BoidSimulation {
 public:
-    BoidSimulationMultinode(int argc, char *argv[]);
+    BoidSimulationMultinode(int argc, char **argv);
     ~BoidSimulationMultinode();
     void init();
     void update();
     int get(unsigned int id, double* x, double* y, double* z);
     void set_master(bool master);
     bool is_master_node(){return is_master;};
-    void gather_data();
+
     double* data_buffer;
 protected:
+    void gather_data();
+
     double* data_buffer_swap;
     double* margin_data_buffer;
     double* margin_data_buffer_swap;

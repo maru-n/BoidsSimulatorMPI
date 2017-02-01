@@ -3,7 +3,7 @@
 #PJM --rsc-list "node=1"
 #PJM --rsc-list "elapse=1:00:00"
 #PJM --stg-transfiles all
-#PJM --stgin "./bin/boidsim ./"
+#PJM --stgin "./boidsim ./"
 #PJM --stgin "./settings/*.ini ./"
 #PJM --stgout "./*.ptcl /data/hp160264/k03378/"
 #PJM -s

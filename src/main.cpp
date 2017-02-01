@@ -4,26 +4,17 @@
 
 #include <stdlib.h>
 #include <list>
-#include <math.h>
 #include <fstream>
 #include <iostream>
+//#include <random>
 #include "dtype.h"
+#include "args.h"
 #include "boid_simulation.h"
 #include "boid_simulation_mpi.h"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
 
 using std::string;
-using std::cout;
-using std::endl;
-using std::flush;
-using boost::property_tree::ptree;
-using boost::property_tree::read_ini;
 
-unsigned int FPS = 30;
-unsigned int N;
-unsigned int T;
-double FIELD_SIZE;
+const unsigned int FPS = 30;
 
 bool is_little_endian;
 BoidSimulation* boid_sim;
@@ -45,165 +36,95 @@ template <typename T> T fix_byte_order(T value) {
 
 void check_endianness() {
     int x = 1;   // 0x00000001
-    if( *(char *)&x ){
-        is_little_endian = true;
-    }else{
-        is_little_endian = false;
-    }
+    is_little_endian = *(char *)&x != 0;
 }
 
-
-void print_settings()
-{
-    cout << "N: " << N << endl
-         << "T: " << T << endl
-         << "field size: " << boid_sim->field_size_X << "," << boid_sim->field_size_Y << "," << boid_sim->field_size_Z << endl
-         << "#Separation" << endl
-         << "force: " << boid_sim->separation.force_coefficient << endl
-         << "area distance: " << boid_sim->separation.sight_distance << endl
-         << "area angle: " << boid_sim->separation.sight_agnle << endl
-         << "#Alignment" << endl
-         << "force: " << boid_sim->alignment.force_coefficient << endl
-         << "area distance: " <<  boid_sim->alignment.sight_distance << endl
-         << "area angle: " << boid_sim->alignment.sight_agnle << endl
-         << "#Cohesion" << endl
-         << "force: " << boid_sim->cohesion.force_coefficient << endl
-         << "area distance: " << boid_sim->cohesion.sight_distance << endl
-         << "area angle: " << boid_sim->cohesion.sight_agnle << endl
-         << "#Velocity" << endl
-         << "min: " << boid_sim->velocity.min << endl
-         << "max: " << boid_sim->velocity.max << endl
-         << "#OpenMP: ";
-    if (boid_sim->is_openmp_enabled()) {
-        cout << "Enabled (max threads = " << boid_sim->get_max_threads() << ")" << endl;
-    } else {
-        cout << "Disabled" << endl;
-    }
+bool is_master() {
+#ifdef _MPI
+    return dynamic_cast<boid_sim->ulationMultinode*>(boid_sim)->is_master_node();
+#else
+    return true;
+#endif
 }
 
-
-void setup_boid_simulation(BoidSimulation* boid_sim, int argc, char *argv[])
+int main(int argc, char **argv)
 {
-    N = (unsigned int)(atoi(argv[2]));
-    T = (unsigned int)(atoi(argv[3]));
-    string setting_fname = argv[4];
-
-    ptree pt;
-    read_ini(setting_fname, pt);
-    boid_sim->setup(N,
-                    pt.get<double>("Global.FIELD_SIZE"),
-                    pt.get<double>("Separation.SIGHT_DISTANCE"),
-                    pt.get<double>("Separation.SIGHT_ANGLE"),
-                    pt.get<double>("Separation.FORCE_COEFFICIENT"),
-                    pt.get<double>("Alignment.SIGHT_DISTANCE"),
-                    pt.get<double>("Alignment.SIGHT_ANGLE"),
-                    pt.get<double>("Alignment.FORCE_COEFFICIENT"),
-                    pt.get<double>("Cohesion.SIGHT_DISTANCE"),
-                    pt.get<double>("Cohesion.SIGHT_ANGLE"),
-                    pt.get<double>("Cohesion.FORCE_COEFFICIENT"),
-                    pt.get<double>("Velocity.MAX"),
-                    pt.get<double>("Velocity.MIN"),
-                    pt.get<string>("Global.INIT"),
-                    pt.get<int>("Global.RANDOM_SEED"));
-}
-
-
-void setup_output_data_file(string fname)
-{
-    check_endianness();
-    fout.open(fname.c_str(), std::ios::out|std::ios::binary|std::ios::trunc);
-    if (!fout) {
-        std::cerr << "Couldn't open output file." << endl;
-        exit(-1);
-    }
-    data_file_header_v01 header;
-    header.N = fix_byte_order(N);
-    header.T = fix_byte_order(T);
-    header.fps = fix_byte_order(FPS);
-    fout.write((char*)&header,sizeof(header));
-}
-
-
-int main_singlenode(int argc, char *argv[])
-{
+#ifdef _MPI
+    boid_sim = new BoidSimulationMultinode(argc, argv);
+#else
     boid_sim = new BoidSimulation();
+#endif
+    Args args(argc, (const char **) argv);
+    boid_sim->setup(args.population, args.field_size,
+                    args.separation_sight_distance, args.separation_sight_angle, args.separation_force_coefficient,
+                    args.alignment_sight_distance, args.alignment_sight_angle, args.alignment_force_coefficient,
+                    args.cohesion_sight_distance, args.cohesion_sight_angle, args.cohesion_force_coefficient,
+                    args.velocity_max, args.velocity_min,
+                    args.init_condition, args.random_seed);
 
-    setup_boid_simulation(boid_sim, argc, argv);
-    print_settings();
-    setup_output_data_file(argv[1]);
+    if(is_master()) {
+        std::cout << args.population << std::endl;
+
+        std::cout << "N: " << boid_sim->N << std::endl
+                  << "field size: " << boid_sim->field_size_X << "," << boid_sim->field_size_Y << "," << boid_sim->field_size_Z << std::endl
+                  << "#Separation" << std::endl
+                  << "force: " << boid_sim->separation.force_coefficient << std::endl
+                  << "area distance: " << boid_sim->separation.sight_distance << std::endl
+                  << "area angle: " << boid_sim->separation.sight_agnle << std::endl
+                  << "#Alignment" << std::endl
+                  << "force: " << boid_sim->alignment.force_coefficient << std::endl
+                  << "area distance: " <<  boid_sim->alignment.sight_distance << std::endl
+                  << "area angle: " << boid_sim->alignment.sight_agnle << std::endl
+                  << "#Cohesion" << std::endl
+                  << "force: " << boid_sim->cohesion.force_coefficient << std::endl
+                  << "area distance: " << boid_sim->cohesion.sight_distance << std::endl
+                  << "area angle: " << boid_sim->cohesion.sight_agnle << std::endl
+                  << "#Velocity" << std::endl
+                  << "min: " << boid_sim->velocity.min << std::endl
+                  << "max: " << boid_sim->velocity.max << std::endl
+                  << "#OpenMP: " << (boid_sim->is_openmp_enabled() ? ("enabled (max threads:" + std::to_string(boid_sim->get_max_threads()) + ")") : "disabled")
+                  << std::endl;
+
+
+        check_endianness();
+        fout.open(args.output_filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!fout) {
+            std::cerr << "Couldn't open output file." << std::endl;
+            exit(-1);
+        }
+        data_file_header_v01 header;
+        header.N = fix_byte_order(args.population);
+        header.T = fix_byte_order(args.time_step);
+        header.fps = fix_byte_order(FPS);
+        fout.write((char *) &header, sizeof(header));
+    }
 
     // simulation
     boid_sim->init();
+
     std::cout << "simulation start." << std::endl;
     double x, y, z;
     float fx, fy, fz;
-    for (unsigned int t=0; t<T; t++) {
-        for(int i=0; i<N; i++){
-            boid_sim->get(i, &x, &y, &z);
-            fx = fix_byte_order(float(x));
-            fy = fix_byte_order(float(y));
-            fz = fix_byte_order(float(z));
-            fout.write((char*)&fx, sizeof(fx));
-            fout.write((char*)&fy, sizeof(fy));
-            fout.write((char*)&fz, sizeof(fz));
-        }
-        boid_sim->update();
-        cout << " " << t << "/" << T << "\r" << flush;
-    }
-    std::cout << "simulation end." << std::endl;
-    fout.close();
-    delete boid_sim;
-    return 0;
-}
-
-#ifdef _MPI
-int main_multinode(int argc, char *argv[])
-{
-    boid_sim = new BoidSimulationMultinode(argc, argv);
-    setup_boid_simulation(boid_sim, argc, argv);
-    if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
-        print_settings();
-        setup_output_data_file(argv[1]);
-    }
-
-    // simulation
-    boid_sim->init();
-    if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
-        std::cout << "simulation start." << std::endl;
-    }
-    double x, y, z;
-    float fx, fy, fz;
-    for (unsigned int t=0; t<T; t++) {
-        dynamic_cast<BoidSimulationMultinode*>(boid_sim)->gather_data();
-        if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
-            for (int i = 0; i < N; i++) {
+    for (unsigned int t=0; t<args.time_step; t++) {
+        if (is_master()) {
+            for (int i = 0; i < boid_sim->N; i++) {
                 boid_sim->get(i, &x, &y, &z);
                 fx = fix_byte_order(float(x));
                 fy = fix_byte_order(float(y));
                 fz = fix_byte_order(float(z));
-                fout.write((char*)&fx, sizeof(fx));
-                fout.write((char*)&fy, sizeof(fy));
-                fout.write((char*)&fz, sizeof(fz));
+                fout.write((char *) &fx, sizeof(fx));
+                fout.write((char *) &fy, sizeof(fy));
+                fout.write((char *) &fz, sizeof(fz));
             }
-            //cout << t << "/" << T << "\r" << flush;
-            cout << t << "/" << T << endl;
+            std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
         }
         boid_sim->update();
     }
-    if(dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node()) {
-        std::cout << "simulation end." << std::endl;
+    if (is_master()) {
+        std::cout << "simulation finished." << std::endl;
+        fout.close();
     }
     delete boid_sim;
+
     return 0;
-}
-#endif
-
-
-int main(int argc, char *argv[])
-{
-#ifdef _MPI
-    return main_multinode(argc, argv);
-#else
-    return main_singlenode(argc, argv);
-#endif
 }

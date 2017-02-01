@@ -16,4 +16,18 @@ typedef struct {
 } data_file_header_v01;
 #pragma pack()
 
+
+typedef struct {
+    double sight_distance;
+    double sight_agnle;
+    double force_coefficient;
+} interaction_parameters;
+
+
+typedef struct {
+    double max;
+    double min;
+} velocity_parameters;
+
+
 #endif //MASSIVESWARM_DTYPE_H

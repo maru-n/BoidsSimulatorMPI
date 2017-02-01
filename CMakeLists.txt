@@ -25,6 +25,7 @@ if (MPI_CXX_FOUND)
     set(CMAKE_CXX_COMPILER ${MPI_CXX_COMPILER})
     add_executable(boidsim_mpi
             src/main.cpp
+            src/args.cpp
             src/boid.cpp
             src/vector3D.cpp
             src/boid_simulation.cpp
@@ -35,6 +36,7 @@ endif()
 
 add_executable(boidsim
         src/main.cpp
+        src/args.cpp
         src/boid.cpp
         src/vector3D.cpp
         src/boid_simulation.cpp

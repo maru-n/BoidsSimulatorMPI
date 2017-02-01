@@ -205,7 +205,7 @@ int BoidSimulation::get(unsigned int id, double* x, double* y, double* z)
     return 0;
 }
 
-bool BoidSimulation::is_openmp_enabled()
+bool BoidSimulation::is_openmp_enabled() const
 {
 #ifdef _OPENMP
     return true;
@@ -214,7 +214,7 @@ bool BoidSimulation::is_openmp_enabled()
 #endif
 }
 
-int BoidSimulation::get_max_threads()
+int BoidSimulation::get_max_threads() const
 {
 #ifdef _OPENMP
     return omp_get_max_threads();
@@ -222,3 +222,31 @@ int BoidSimulation::get_max_threads()
     return -1;
 #endif
 }
+
+std::ostream& operator<<(std::ostream& stream, const BoidSimulation& boidsim)
+{
+    stream << "N: " << boidsim.N << std::endl
+           << "field size: " << boidsim.field_size_X << "," << boidsim.field_size_Y << "," << boidsim.field_size_Z << std::endl
+           << "#Separation" << std::endl
+           << "force: " << boidsim.separation.force_coefficient << std::endl
+           << "area distance: " << boidsim.separation.sight_distance << std::endl
+           << "area angle: " << boidsim.separation.sight_agnle << std::endl
+           << "#Alignment" << std::endl
+           << "force: " << boidsim.alignment.force_coefficient << std::endl
+           << "area distance: " <<  boidsim.alignment.sight_distance << std::endl
+           << "area angle: " << boidsim.alignment.sight_agnle << std::endl
+           << "#Cohesion" << std::endl
+           << "force: " << boidsim.cohesion.force_coefficient << std::endl
+           << "area distance: " << boidsim.cohesion.sight_distance << std::endl
+           << "area angle: " << boidsim.cohesion.sight_agnle << std::endl
+           << "#Velocity" << std::endl
+           << "min: " << boidsim.velocity.min << std::endl
+           << "max: " << boidsim.velocity.max << std::endl
+           << "#OpenMP: ";
+    if (boidsim.is_openmp_enabled()) {
+        stream << "Enabled (max threads = " << boidsim.get_max_threads() << ")" << std::endl;
+    } else {
+        stream << "Disabled" << std::endl;
+    }
+    return stream;
+};

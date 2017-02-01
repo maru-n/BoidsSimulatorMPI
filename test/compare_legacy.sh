@@ -14,7 +14,7 @@ cmake ${CMAKE_OPTIONS} .. || exit -1
 make boidsim boidsim_legacy || exit -1
 
 echo -e "calculating current version."
-./boidsim ${data_name} $N $T ${setting_file} > /dev/null || exit -1
+./boidsim -s ${setting_file} -o ${data_name} -T $T > /dev/null || exit -1
 
 echo -e "calculating legacy version."
 ./boidsim_legacy ${data_name_legacy} $N $T > /dev/null || exit -1
