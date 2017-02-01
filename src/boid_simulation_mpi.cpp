@@ -24,6 +24,10 @@ int topology_get_shape(int *x, int *y, int *z)
 #ifdef __FCC_VERSION
     return FJMPI_Topology_get_shape(x, y, z);
 #else
+    //TODO: this assume that node size is fixed 8. (mpiexec -n 8)
+    *x = 2;
+    *y = 2;
+    *z = 2;
     return 0;
 #endif
 }
@@ -33,6 +37,11 @@ int topology_rank2xyz(int rank, int *x, int *y, int *z)
 #ifdef __FCC_VERSION
     return FJMPI_Topology_rank2xyz(rank, x, y, z);
 #else
+    int size_x, size_y, size_z;
+    topology_get_shape(&size_x, &size_y, &size_z);
+    *x = rank % size_x;
+    *y = rank / size_x % size_y;
+    *z = rank / (size_x * size_y);
     return 0;
 #endif
 }
@@ -42,6 +51,9 @@ int topology_xyz2rank(int x, int y, int z, int *rank)
 #ifdef __FCC_VERSION
     return FJMPI_Topology_xyz2rank(x, y, z, rank);
 #else
+    int size_x, size_y, size_z;
+    topology_get_shape(&size_x, &size_y, &size_z);
+    *rank = size_x*size_y*z + size_x*y + x;
     return 0;
 #endif
 }
@@ -82,12 +94,11 @@ BoidSimulationMultinode::BoidSimulationMultinode(int argc, char **argv)
                 if (new_rank) {
                     neighborhood_rank[neighborhood_num++] = r;
                 }
-                //if (is_master) std::cout << "master:n_rank:" << i << "," << j <<  "," << k << "(" << neighborhood_rank[i][j][k] << ")" << std::endl;
             }
         }
     }
     /*
-    std::cout << mpi_rank << ":";
+    std::cout << "rank:" << mpi_rank << "(" << mpi_position_x << "," << mpi_position_y << "," << mpi_position_z << ")";
     for (int i = 0; i < neighborhood_num; ++i) {
         std::cout << neighborhood_rank[i] << ",";
     }
