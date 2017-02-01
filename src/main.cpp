@@ -6,7 +6,6 @@
 #include <list>
 #include <fstream>
 #include <iostream>
-//#include <random>
 #include "dtype.h"
 #include "args.h"
 #include "boid_simulation.h"
@@ -41,7 +40,7 @@ void check_endianness() {
 
 bool is_master() {
 #ifdef _MPI
-    return dynamic_cast<boid_sim->ulationMultinode*>(boid_sim)->is_master_node();
+    return dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node();
 #else
     return true;
 #endif
@@ -101,8 +100,9 @@ int main(int argc, char **argv)
 
     // simulation
     boid_sim->init();
-
-    std::cout << "simulation start." << std::endl;
+    if(is_master()) {
+        std::cout << "simulation start." << std::endl;
+    }
     double x, y, z;
     float fx, fy, fz;
     for (unsigned int t=0; t<args.time_step; t++) {
@@ -116,7 +116,9 @@ int main(int argc, char **argv)
                 fout.write((char *) &fy, sizeof(fy));
                 fout.write((char *) &fz, sizeof(fz));
             }
-            std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
+            if(is_master()) {
+                std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
+            }
         }
         boid_sim->update();
     }
