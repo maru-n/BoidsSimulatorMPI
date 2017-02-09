@@ -80,9 +80,14 @@ int main(int argc, char **argv)
                   << "area angle: " << boid_sim->cohesion.sight_agnle << std::endl
                   << "#Velocity" << std::endl
                   << "min: " << boid_sim->velocity.min << std::endl
-                  << "max: " << boid_sim->velocity.max << std::endl
-                  << "#OpenMP: " << (boid_sim->is_openmp_enabled() ? ("enabled (max threads:" + std::to_string(boid_sim->get_max_threads()) + ")") : "disabled")
-                  << std::endl;
+                  << "max: " << boid_sim->velocity.max << std::endl;
+                  //<< "#OpenMP: " << (boid_sim->is_openmp_enabled() ? ("enabled (max threads:" + std::to_string(boid_sim->get_max_threads()) + ")") : "disabled")
+        if (boid_sim->is_openmp_enabled()) {
+            std::cout << "#OpenMP: enabled (max threads:" << boid_sim->get_max_threads() << ")" << std::endl;
+        } else {
+            std::cout << "#OpenMP: disabled" << std::endl;
+        }
+
 
 
         check_endianness();

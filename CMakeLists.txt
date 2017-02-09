@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 project(MassiveSwarm)
 
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lboost_program_options")
 
 # compiler options on K
-if ($ENV{Env_base} MATCHES "K-1.2.0-20-1")
+if (DEFINED ENV{Env_base})
+    if (NOT $ENV{Env_base} MATCHES "K-1.2.0-20")
+        message("Warning: Current version of environment is not verificated: " $ENV{Env_base})
+        message("recommended version is 1.2.0-20-1")
+    endif()
     #set(K_C_CXX_FLAGS "-Xg -Kfast -Kparallel -Koptmsg=2 -V -Nsrc -Nsta")
     #set(K_C_CXX_FLAGS "-Xg -Kfast -Kparallel -Koptmsg=1 -w")
     set(K_C_CXX_FLAGS "-Xg -Kfast -Kparallel -w")
@@ -48,3 +53,4 @@ add_executable(boidsim_legacy
         src/legacy/boid.cpp
         src/legacy/vector3D.cpp
         )
+

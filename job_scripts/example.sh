@@ -10,11 +10,14 @@
 #PJM --name example
 #
 
-. /work/system/Env_base
+
+
+. /work/system/Env_base_1.2.0-20-1
 export LD_LIBRARY_PATH=/opt/rist/boost-1.53.0/lib:$LD_LIBRARY_PATH
 
-export AGENT_NUM=1000
 export TIME_STEP=1800
-export DATA_FILE_NAME=${PJM_JOBID}.ptcl
+export AGENT_NUM=1000
+export FIELD_SIZE=1.0
+export DATA_FILE_NAME=data_${PJM_JOBID}.ptcl
 
-./boidsim ${DATA_FILE_NAME} ${AGENT_NUM} ${TIME_STEP} settings.ini
+./boidsim -s example.ini -T ${TIME_STEP} -N ${AGENT_NUM} -F ${FIELD_SIZE} -o ${DATA_FILE_NAME}

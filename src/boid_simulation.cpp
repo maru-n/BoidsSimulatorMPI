@@ -249,4 +249,4 @@ std::ostream& operator<<(std::ostream& stream, const BoidSimulation& boidsim)
         stream << "Disabled" << std::endl;
     }
     return stream;
-};
+}

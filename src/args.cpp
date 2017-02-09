@@ -28,7 +28,7 @@ Args::Args(int argc, const char **argv)
     sim_options.add_options()
             ("population,N", value<unsigned int>(&population), "Number of boids.")
             ("timestep,T", value<unsigned int>(&time_step), "Simulation time step.")
-            //("field-size", value<double>(&field_size), "Size of simulation area.")
+            ("field-size,F", value<double>(&field_size), "Size of simulation area.")
             ;
     options.add(sim_options);
 
@@ -102,11 +102,10 @@ Args::Args(int argc, const char **argv)
             velocity_min = o.get();
         }
     }
-    /*
+
     if (values.count("field-size")) {
-        std::cout << values["field-size"].as<double>() << std::endl;
+        field_size = values["field-size"].as<double>();
     }
-     */
 
     if (values.count("population")) {
         population = values["population"].as<unsigned int>();
