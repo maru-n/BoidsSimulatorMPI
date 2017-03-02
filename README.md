@@ -51,5 +51,5 @@ require python3
 example
 ```
 $ cd ${PROJECT_ROOT}
-$ ./k_scripts/gen_jobscript.py -s ./settings/one_body.ini ./settings/mototake.ini -n '[2**i for i in range(10,20)]' -d 16384 -t 3000 -o job_scripts/20170301
+$ ./tools/gen_jobscript.py -s ./settings/one_body.ini ./settings/mototake.ini -n '[2**i for i in range(10,20)]' -d 16384 -t 3000 -o job_scripts/20170301
 ```
