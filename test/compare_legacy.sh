@@ -15,15 +15,17 @@ cmake ${CMAKE_OPTIONS} .. || exit -1
 make boidsim boidsim_mpi boidsim_legacy || exit -1
 
 echo -e "calculating normal version."
-./boidsim -s ${setting_file} -o ${data_name} -T $T > /dev/null || exit -1
+./boidsim -s ${setting_file} -o ${data_name}_org -T $T > /dev/null || exit -1
+dd if=${data_name}_org bs=1 skip=50 of=${data_name} 2> /dev/null
 
 echo -e "calculating MPI version."
-mpiexec -n 8 ./boidsim_mpi -s ${setting_file} -o ${data_name_mpi} -T $T > /dev/null || exit -1
+mpiexec -n 8 ./boidsim_mpi -s ${setting_file} -o ${data_name_mpi}_org -T $T > /dev/null || exit -1
+dd if=${data_name_mpi}_org bs=1 skip=50 of=${data_name_mpi} 2> /dev/null
 
 echo -e "calculating legacy version."
 ./boidsim_legacy ${data_name_legacy} $N $T > /dev/null || exit -1
 
-cmp ${data_name} ${data_name_legacy} 0 0> /dev/null
+cmp ${data_name} ${data_name_legacy} 0 0 > /dev/null
 if [ $? = 0 ]; then
     echo -e "normal:\033[0;32mTest Succeeded\033[0;39m"
 else

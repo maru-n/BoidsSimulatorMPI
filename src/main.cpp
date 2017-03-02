@@ -62,7 +62,6 @@ int main(int argc, char **argv)
                     args.init_condition, args.random_seed);
 
     if(is_master()) {
-        std::cout << args.population << std::endl;
 
         std::cout << "N: " << boid_sim->N << std::endl
                   << "field size: " << boid_sim->field_size_X << "," << boid_sim->field_size_Y << "," << boid_sim->field_size_Z << std::endl
@@ -96,10 +95,18 @@ int main(int argc, char **argv)
             std::cerr << "Couldn't open output file." << std::endl;
             exit(-1);
         }
-        data_file_header_v01 header;
-        header.N = fix_byte_order(args.population);
-        header.T = fix_byte_order(args.time_step);
-        header.fps = fix_byte_order(FPS);
+        data_file_header_v02 header;
+        header.header_length = fix_byte_order(sizeof(header));
+        header.N     = fix_byte_order(args.population);
+        header.step  = fix_byte_order(args.time_step);
+        header.t_0   = fix_byte_order((unsigned int)0);
+        header.fps   = fix_byte_order(FPS);
+        header.x_min = fix_byte_order(0.0f);
+        header.x_max = fix_byte_order((float)boid_sim->field_size_X);
+        header.y_min = fix_byte_order(0.0f);
+        header.y_max = fix_byte_order((float)boid_sim->field_size_Y);
+        header.z_min = fix_byte_order(0.0f);
+        header.z_max = fix_byte_order((float) boid_sim->field_size_Z);
         fout.write((char *) &header, sizeof(header));
     }
 

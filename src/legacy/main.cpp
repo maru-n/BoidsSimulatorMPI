@@ -292,6 +292,7 @@ int main(int argc, char *argv[])
 
     std::cout << "start" << std::endl;
     init();
+    /*
     unsigned char MAJOR_VERSION = 0;
     unsigned char MINOR_VERSION = 1;
     char type[] = "PTCL";
@@ -307,6 +308,7 @@ int main(int argc, char *argv[])
     fout.write((char*)&tmp,sizeof(tmp));
     tmp = fix_byte_order(fps);
     fout.write((char*)&tmp,sizeof(tmp));
+     */
 
     for (unsigned int t=0; t<T; t++) {
         std::cout << t << std::endl;

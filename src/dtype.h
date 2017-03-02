@@ -16,6 +16,25 @@ typedef struct {
 } data_file_header_v01;
 #pragma pack()
 
+#pragma pack(1)
+typedef struct {
+    char format_name[4] = {'P', 'T', 'C', 'L'};
+    unsigned char major_version = 0;
+    unsigned char minor_version = 2;
+    unsigned int header_length;
+    unsigned int N;
+    unsigned int step;
+    unsigned int t_0;
+    unsigned int fps;
+    float x_min;
+    float x_max;
+    float y_min;
+    float y_max;
+    float z_min;
+    float z_max;
+} data_file_header_v02;
+#pragma pack()
+
 
 typedef struct {
     double sight_distance;
