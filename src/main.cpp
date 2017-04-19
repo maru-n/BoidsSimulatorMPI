@@ -59,8 +59,8 @@ int main(int argc, char **argv)
                     args.alignment_sight_distance, args.alignment_sight_angle, args.alignment_force_coefficient,
                     args.cohesion_sight_distance, args.cohesion_sight_angle, args.cohesion_force_coefficient,
                     args.velocity_max, args.velocity_min,
-                    args.init_condition, args.random_seed);
-
+                    args.initialization, args.random_seed);
+    boid_sim->init();
     if(is_master()) {
 
         std::cout << "N: " << boid_sim->N << std::endl
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
         header.header_length = fix_byte_order(sizeof(header));
         header.N     = fix_byte_order(args.population);
         header.step  = fix_byte_order(args.time_step);
-        header.t_0   = fix_byte_order((unsigned int)0);
+        header.t_0   = fix_byte_order(boid_sim->time_step);
         header.fps   = fix_byte_order(FPS);
         header.x_min = fix_byte_order(0.0f);
         header.x_max = fix_byte_order((float)boid_sim->field_size_X);
@@ -111,7 +111,6 @@ int main(int argc, char **argv)
     }
 
     // simulation
-    boid_sim->init();
     if(is_master()) {
         std::cout << "simulation start." << std::endl;
     }

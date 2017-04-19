@@ -29,7 +29,7 @@ public:
     double cohesion_force_coefficient;
     double velocity_max;
     double velocity_min;
-    std::string init_condition;
+    std::string initialization;
     int random_seed;
 };
 

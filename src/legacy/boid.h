@@ -14,7 +14,8 @@
 //#include <glut/glut.h>
 //#include <GLUI/GLUI.h>
 //#include "/Users/ikeg/Downloads/glui-2.36/src/include/GL/glui.h"
-#include "vector3D.h"
+//#include "vector3D.h"
+#include "../vector3D.h"
 
 class Boid {
 public:

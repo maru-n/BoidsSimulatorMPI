@@ -27,7 +27,7 @@ public:
                double cohesion_force_coefficient,
                double velocity_max,
                double velocity_min,
-               std::string init_condition,
+               std::string initialization,
                int rand_seed);
     virtual void init();
     virtual void update();
@@ -36,13 +36,14 @@ public:
     int get_max_threads() const;
 
     unsigned int N;
+    unsigned int time_step;
     double field_size;
     double field_size_X, field_size_Y, field_size_Z;
     interaction_parameters separation, alignment, cohesion;
     velocity_parameters velocity;
     Boid* boids;
 protected:
-    std::string init_condition;
+    std::string initialization_type;
     int rand_seed;
     Vector3D *dv;
     Vector3D *dv_coh;

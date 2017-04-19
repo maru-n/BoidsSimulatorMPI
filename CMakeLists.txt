@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(MassiveSwarm)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
+
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lboost_program_options")
@@ -50,6 +52,7 @@ install(TARGETS boidsim DESTINATION bin)
 add_executable(boidsim_legacy
         src/legacy/main.cpp
         src/legacy/boid.cpp
-        src/legacy/vector3D.cpp
+        #src/legacy/vector3D.cpp
+        src/vector3D.cpp
         )
 

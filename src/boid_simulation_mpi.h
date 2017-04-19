@@ -18,10 +18,12 @@ public:
     bool is_master_node(){return is_master;};
 
     double* data_buffer;
+    unsigned* data_id_buffer;
 protected:
     void gather_data();
 
     double* data_buffer_swap;
+    unsigned* data_id_buffer_swap;
     double* margin_data_buffer;
     double* margin_data_buffer_swap;
     unsigned int margin_data_buffer_count;

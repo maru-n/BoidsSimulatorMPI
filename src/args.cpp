@@ -26,8 +26,9 @@ Args::Args(int argc, const char **argv)
             ;
     options_description sim_options("simulation parameters (have priority over setting file.)");
     sim_options.add_options()
+            ("initialization,i", value<string>(&output_filename), "initialization type or file name. if file name is given, simulation will start with last conditon of the file. ")
             ("population,N", value<unsigned int>(&population), "Number of boids.")
-            ("timestep,T", value<unsigned int>(&time_step), "Simulation time step.")
+            ("time-step,T", value<unsigned int>(&time_step), "Simulation time step.")
             ("field-size,F", value<double>(&field_size), "Size of simulation area.")
             ;
     options.add(sim_options);
@@ -56,6 +57,9 @@ Args::Args(int argc, const char **argv)
     if(values.count("setting")) {
         ptree pt;
         read_ini(setting_filename, pt);
+        if (boost::optional<unsigned int> o = pt.get_optional<unsigned int>("Global.TIME_STEP")) {
+            time_step = o.get();
+        }
         if (boost::optional<unsigned int> o = pt.get_optional<unsigned int>("Global.POPULATION")) {
             population = o.get();
         }
@@ -63,7 +67,7 @@ Args::Args(int argc, const char **argv)
             field_size = o.get();
         }
         if (boost::optional<string> o = pt.get_optional<string>("Global.INIT")) {
-            init_condition = o.get();
+            initialization = o.get();
         }
         if (boost::optional<int> o = pt.get_optional<int>("Global.RANDOM_SEED")) {
             random_seed = o.get();
@@ -102,7 +106,9 @@ Args::Args(int argc, const char **argv)
             velocity_min = o.get();
         }
     }
-
+    if (values.count("initialization")) {
+        initialization = values["initialization"].as<string>();
+    }
     if (values.count("field-size")) {
         field_size = values["field-size"].as<double>();
     }
@@ -111,7 +117,7 @@ Args::Args(int argc, const char **argv)
         population = values["population"].as<unsigned int>();
     }
 
-    if (values.count("timestep")) {
-        time_step = values["timestep"].as<unsigned int>();
+    if (values.count("time-step")) {
+        time_step = values["time-step"].as<unsigned int>();
     }
 }

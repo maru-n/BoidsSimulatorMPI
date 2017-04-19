@@ -26,8 +26,15 @@ public:
     //bool isInsideAlignmentArea(Boid &_b);
 	//bool isInsideCohesionArea(Boid &_b);
 
+	unsigned id;
 	Vector3D position;
 	Vector3D velocity;
 };
+
+typedef struct _boid {
+    unsigned int id;
+    float x, y, z;
+    float vx, vy, vz;
+} boid;
 
 #endif

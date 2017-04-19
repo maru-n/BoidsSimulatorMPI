@@ -111,6 +111,8 @@ BoidSimulationMultinode::~BoidSimulationMultinode()
     MPI_Finalize();
     delete[] data_num_buffer;
     delete[] data_buffer;
+    delete[] data_id_buffer;
+    delete[] data_id_buffer_swap;
     delete[] data_buffer_swap;
     delete[] margin_data_buffer;
     delete[] margin_data_buffer_swap;
@@ -121,8 +123,9 @@ void BoidSimulationMultinode::init()
     margin_data_buffer = new double[N*6];
     margin_data_buffer_swap = new double[N*6];
     data_buffer = new double[N*6];
+    data_id_buffer = new unsigned[N];
     data_buffer_swap = new double[N*6];
-
+    data_id_buffer_swap = new unsigned[N];
     data_num_buffer = new unsigned int[mpi_size];
     field_size_local_x = field_size / mpi_topology_x;
     field_size_local_y = field_size / mpi_topology_y;
@@ -163,10 +166,12 @@ void BoidSimulationMultinode::init()
     }
     MPI_Bcast(data_buffer, N*6, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+    unsigned id;
     double x, y, z, vx, vy, vz;
     data_buffer_count = 0;
     margin_data_buffer_count = 0;
     for (int i = 0; i < N; ++i) {
+        id = i;
         x = data_buffer[i*6+0];
         y = data_buffer[i*6+1];
         z = data_buffer[i*6+2];
@@ -175,9 +180,9 @@ void BoidSimulationMultinode::init()
         vz = data_buffer[i*6+5];
         boids[i].set(x, y, z, vx, vy, vz);
 
-        if ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<margin_x_upper) : (x>=margin_x_lower||x<margin_x_upper)) &&
-             (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&y<margin_y_upper) : (y>=margin_y_lower||y<margin_y_upper)) &&
-             (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&z<margin_z_upper) : (z>=margin_z_lower||z<margin_z_upper))) {
+        if ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<=margin_x_upper) : (x>=margin_x_lower||x<=margin_x_upper)) &&
+             (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&y<=margin_y_upper) : (y>=margin_y_lower||y<=margin_y_upper)) &&
+             (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&z<=margin_z_upper) : (z>=margin_z_lower||z<=margin_z_upper))) {
             margin_data_buffer[margin_data_buffer_count+0] = x;
             margin_data_buffer[margin_data_buffer_count+1] = y;
             margin_data_buffer[margin_data_buffer_count+2] = z;
@@ -189,6 +194,7 @@ void BoidSimulationMultinode::init()
         if (x >= space_x_lower && x < space_x_upper &&
             y >= space_y_lower && y < space_y_upper &&
             z >= space_z_lower && z < space_z_upper) {
+            data_id_buffer[data_buffer_count/6] = id;
             data_buffer_swap[data_buffer_count+0] = x;
             data_buffer_swap[data_buffer_count+1] = y;
             data_buffer_swap[data_buffer_count+2] = z;
@@ -201,6 +207,8 @@ void BoidSimulationMultinode::init()
     double* tmp = data_buffer;
     data_buffer = data_buffer_swap;
     data_buffer_swap = tmp;
+
+    gather_data();
 }
 
 
@@ -321,12 +329,16 @@ void BoidSimulationMultinode::update()
     unsigned int recv_data_buffer_count = 0;
     double *send_data_buffer = new double[N*6];
     double *recv_data_buffer = new double[N*6];
+    unsigned *send_data_id_buffer = new unsigned[N];
+    unsigned *recv_data_id_buffer = new unsigned[N];
     //data_buffer_count = 0;
 
+    unsigned id;
     unsigned int data_buffer_count_new = 0;
     unsigned int margin_data_buffer_count_new = 0;
     for(int i=0; i<data_buffer_count/6; i++) {
 
+        id = data_id_buffer[i];
         x = data_buffer[i*6+0];
         y = data_buffer[i*6+1];
         z = data_buffer[i*6+2];
@@ -334,15 +346,16 @@ void BoidSimulationMultinode::update()
         vy = data_buffer[i*6+4];
         vz = data_buffer[i*6+5];
 
-        if (x < (space_x_lower+margin_width) || x >= (space_x_upper-margin_width) ||
-            y < (space_y_lower+margin_width) || y >= (space_y_upper-margin_width) ||
-            z < (space_z_lower+margin_width) || z >= (space_z_upper-margin_width)) {
+        if (x <= (space_x_lower+margin_width) || x >= (space_x_upper-margin_width) ||
+            y <= (space_y_lower+margin_width) || y >= (space_y_upper-margin_width) ||
+            z <= (space_z_lower+margin_width) || z >= (space_z_upper-margin_width)) {
             send_data_buffer[send_data_buffer_count+0] = x;
             send_data_buffer[send_data_buffer_count+1] = y;
             send_data_buffer[send_data_buffer_count+2] = z;
             send_data_buffer[send_data_buffer_count+3] = vx;
             send_data_buffer[send_data_buffer_count+4] = vy;
             send_data_buffer[send_data_buffer_count+5] = vz;
+            send_data_id_buffer[send_data_buffer_count/6] = id;
             send_data_buffer_count+=6;
         } else {
             data_buffer_swap[data_buffer_count_new+0] = x;
@@ -351,6 +364,7 @@ void BoidSimulationMultinode::update()
             data_buffer_swap[data_buffer_count_new+3] = vx;
             data_buffer_swap[data_buffer_count_new+4] = vy;
             data_buffer_swap[data_buffer_count_new+5] = vz;
+            data_id_buffer_swap[data_buffer_count_new/6] = id;
             data_buffer_count_new += 6;
             margin_data_buffer_swap[margin_data_buffer_count_new+0] = x;
             margin_data_buffer_swap[margin_data_buffer_count_new+1] = y;
@@ -373,36 +387,48 @@ void BoidSimulationMultinode::update()
     margin_data_buffer_swap = tmp;
     margin_data_buffer_count = margin_data_buffer_count_new;
 
+    unsigned* tmp2;
+    tmp2 = data_id_buffer;
+    data_id_buffer = data_id_buffer_swap;
+    data_id_buffer_swap = tmp2;
 
     MPI_Request request1[27*2];
-    MPI_Request request2[27*2];
-    MPI_Status status[27*2];
+    MPI_Request request2[27*4];
+    MPI_Status status1[27*2];
+    MPI_Status status2[27*4];
     int request_n=0;
 
     unsigned int data_num[27];
+
     for (int i = 0; i < neighborhood_num; ++i) {
         MPI_Isend(&send_data_buffer_count, 1, MPI_INT, neighborhood_rank[i], 0, MPI_COMM_WORLD, &request1[request_n++]);
         MPI_Irecv(&data_num[i], 1, MPI_INT, neighborhood_rank[i], 0, MPI_COMM_WORLD, &request1[request_n++]);
     }
-    MPI_Waitall(request_n, request1, status);
+    MPI_Waitall(request_n, request1, status1);
 
     request_n = 0;
     for (int i = 0; i < neighborhood_num; ++i) {
         //std::cout << mpi_rank << "->" << neighborhood_rank[i] << ":" << send_data_buffer[0] << std::endl;
         MPI_Isend(send_data_buffer, send_data_buffer_count, MPI_DOUBLE, neighborhood_rank[i], 0, MPI_COMM_WORLD, &request2[request_n++]);
         MPI_Irecv(&recv_data_buffer[recv_data_buffer_count], data_num[i], MPI_DOUBLE, neighborhood_rank[i], 0, MPI_COMM_WORLD, &request2[request_n++]);
+        MPI_Isend(send_data_id_buffer, send_data_buffer_count/6, MPI_UNSIGNED, neighborhood_rank[i], 0, MPI_COMM_WORLD, &request2[request_n++]);
+        MPI_Irecv(&recv_data_id_buffer[recv_data_buffer_count/6], data_num[i]/6, MPI_UNSIGNED, neighborhood_rank[i], 0, MPI_COMM_WORLD, &request2[request_n++]);
         recv_data_buffer_count += data_num[i];
     }
-    MPI_Waitall(request_n, request2, status);
 
+    MPI_Waitall(request_n, request2, status2);
+
+    /*
     unsigned int a = 0;
     for (int i = 0; i < neighborhood_num; ++i) {
         //std::cout << mpi_rank << "<-" << neighborhood_rank[i] << ":" << recv_data_buffer[a] << std::endl;
         a += data_num[i];
     }
+     */
 
 
     for (int i = 0; i < recv_data_buffer_count/6; i++) {
+        id = recv_data_id_buffer[i];
         x = recv_data_buffer[i*6+0];
         y = recv_data_buffer[i*6+1];
         z = recv_data_buffer[i*6+2];
@@ -413,6 +439,7 @@ void BoidSimulationMultinode::update()
         if (x >= space_x_lower && x < space_x_upper &&
             y >= space_y_lower && y < space_y_upper &&
             z >= space_z_lower && z < space_z_upper) {
+            data_id_buffer[data_buffer_count/6] = id;
             data_buffer[data_buffer_count+0] = x;
             data_buffer[data_buffer_count+1] = y;
             data_buffer[data_buffer_count+2] = z;
@@ -428,6 +455,7 @@ void BoidSimulationMultinode::update()
             margin_data_buffer[margin_data_buffer_count+5] = vz;
             margin_data_buffer_count +=6;
         }
+
     }
 
     for (int i = 0; i < recv_data_buffer_count/6; i++) {
@@ -461,29 +489,72 @@ void BoidSimulationMultinode::update()
 
     delete[] send_data_buffer;
     delete[] recv_data_buffer;
+    delete[] send_data_id_buffer;
+    delete[] recv_data_id_buffer;
 }
 
 int BoidSimulationMultinode::get(unsigned int id, double* x, double* y, double* z)
 {
+    //std::cout << id << std::endl;
+    for (int i = 0; i < N; ++i) {
+        if(data_id_buffer[i] == id) {
+            *x = data_buffer[6*i+0];
+            *y = data_buffer[6*i+1];
+            *z = data_buffer[6*i+2];
+            return 0;
+        }
+    }
+    //return -1;
+    exit(-1);
+    /*
     *x = data_buffer[6*id+0];
     *y = data_buffer[6*id+1];
     *z = data_buffer[6*id+2];
     return 0;
+     */
 }
 
 void BoidSimulationMultinode::gather_data()
 {
     MPI_Gather(&data_buffer_count, 1, MPI_INT, data_num_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (is_master) {
+
+        MPI_Request request[(mpi_size-1)*2];
+        MPI_Status status[(mpi_size-1)*2];
         int n = data_num_buffer[0];
+        //std::cout << data_num_buffer[0] << std::endl;
         for (int i = 1; i < mpi_size; ++i) {
-            MPI_Status status;
-            MPI_Recv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, 0, MPI_COMM_WORLD, &status);
+            //MPI_Status status;
+            MPI_Irecv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, (i*2), MPI_COMM_WORLD, &request[(i-1)*2]);
+            MPI_Irecv(&data_id_buffer[n/6], data_num_buffer[i]/6, MPI_UNSIGNED, i, (i*2)+1, MPI_COMM_WORLD, &request[(i-1)*2+1]);
+            /*
+            std::cout << data_num_buffer[i] << std::endl;
+            if (is_master) {std::cout << "test2:" << i << std::endl;}
+            MPI_Recv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, (i*2), MPI_COMM_WORLD, &status[(i-1)*2]);
+            if (is_master) {std::cout << "test3:" << i << std::endl;}
+            MPI_Recv(&data_id_buffer[n/6], data_num_buffer[i]/6, MPI_UNSIGNED, i, (i*2)+1, MPI_COMM_WORLD, &status[(i-1)*2+1]);
+            if (is_master) {std::cout << "test4:" << i << std::endl;}
+             */
             n += data_num_buffer[i];
         }
+        /*
+        for (int j = 0; j < N; ++j) {
+            std::cout << data_id_buffer[j] << ",";
+        }
+        std::cout << std::endl;
+         */
+        //if (is_master) {std::cout << "test2" << std::endl;}
+        MPI_Waitall((mpi_size-1)*2, request, status);
+        //std::cout << mpi_rank << "/" << mpi_size << std::endl;
+        //if (is_master) {std::cout << "test3" << std::endl;}
     } else {
-        MPI_Send(data_buffer, data_buffer_count, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+        MPI_Request request[2];
+        MPI_Status status[2];
+        MPI_Isend(data_buffer, data_buffer_count, MPI_DOUBLE, 0, mpi_rank*2, MPI_COMM_WORLD, &request[0]);
+        MPI_Isend(data_id_buffer, data_buffer_count/6, MPI_UNSIGNED, 0, (mpi_rank*2)+1, MPI_COMM_WORLD, &request[1]);
+        //MPI_Send(data_buffer, data_buffer_count, MPI_DOUBLE, 0, mpi_rank*2, MPI_COMM_WORLD);
+        //MPI_Send(data_id_buffer, data_buffer_count/6, MPI_UNSIGNED, 0, (mpi_rank*2)+1, MPI_COMM_WORLD);
+        MPI_Waitall(2, request, status);
     }
 }
-
 

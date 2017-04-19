@@ -3,7 +3,10 @@
 //
 
 #include "boid_simulation.h"
+#include "dtype.h"
 #include <math.h>
+#include <fstream>
+#include <iostream>
 #include <stdlib.h>
 
 #ifdef MPI_ENABLE
@@ -39,7 +42,7 @@ void BoidSimulation::setup(unsigned int number_of_agents,
                            double cohesion_force_coefficient,
                            double velocity_max,
                            double velocity_min,
-                           std::string init_condition,
+                           std::string initialization,
                            int rand_seed)
 {
     field_size_X = field_size_Y = field_size_Z = field_size;
@@ -54,14 +57,15 @@ void BoidSimulation::setup(unsigned int number_of_agents,
     dv_ali = new Vector3D[N];
     dv_coh = new Vector3D[N];
     dv_sep = new Vector3D[N];
-    this->init_condition = init_condition;
+    this->initialization_type = initialization;
     this->rand_seed = rand_seed;
+    this->time_step = 0;
 }
 
 void BoidSimulation::init()
 {
     srand(rand_seed);
-    if (init_condition == "test") {
+    if (initialization_type == "test") {
         for (int i = 0; i < N; i++) {
             boids[i].position.x = field_size_X * 3 / 8 + drand48() * field_size_X / 4;
             boids[i].position.y = field_size_Y * 3 / 8 + drand48() * field_size_Y / 4;
@@ -77,8 +81,9 @@ void BoidSimulation::init()
             boids[i].velocity.x = double(v * sin(th1) * cos(th2));
             boids[i].velocity.y = double(v * sin(th1) * sin(th2));
             boids[i].velocity.z = double(v * cos(th1));
+            boids[i].id = i;
         }
-    } else if (init_condition == "random_uniform") {
+    } else if (initialization_type == "random_uniform") {
         for (int i = 0; i < N; i++) {
             boids[i].position.x = field_size_X * drand48();
             boids[i].position.y = field_size_Y * drand48();
@@ -89,8 +94,46 @@ void BoidSimulation::init()
             boids[i].velocity.x = double(v * sin(th1) * cos(th2));
             boids[i].velocity.y = double(v * sin(th1) * sin(th2));
             boids[i].velocity.z = double(v * cos(th1));
+            boids[i].id = i;
+        }
+    } else {
+        std::ifstream init_data_file(initialization_type,  std::ios::binary);
+        if (!init_data_file) {
+            std::cerr << "Invalid initial placement type or file name: " << initialization_type << std::endl;
+            exit(-1);
+        }
+        data_file_header_v02 init_data_header;
+        init_data_file.read((char*)&init_data_header, sizeof(init_data_header));
+        if (init_data_header.N != this->N) {
+            std::cerr << "Setup population is " << this->N << ". but in initial placement file population is " << init_data_header.N << std::endl;
+            exit(-1);
         }
 
+        init_data_file.seekg(4 * 3 * this->N * 2, std::ios::end);
+        for (int i = 0; i < this->N; ++i) {
+            init_data_file.read((char*)&boids[i].position.x, sizeof(boids[i].position.x));
+            init_data_file.read((char*)&boids[i].position.y, sizeof(boids[i].position.y));
+            init_data_file.read((char*)&boids[i].position.z, sizeof(boids[i].position.z));
+        }
+        for (int i = 0; i < this->N; ++i) {
+            float tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.x = tmp - boids[i].position.x;
+            boids[i].position.x = tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.y = tmp - boids[i].position.y;
+            boids[i].position.y = tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.z = tmp - boids[i].position.z;
+            boids[i].position.z = tmp;
+            std::cerr << i << ":" << boids[i].position.x << "," << boids[i].position.y << "," << boids[i].position.z << std::endl;
+            boids[i].id = i;
+        }
+
+        this->time_step = init_data_header.t_0 + init_data_header.step - 1;
+        //this->time_step = 0;
+
+        init_data_file.close();
     }
 }
 
