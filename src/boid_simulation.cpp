@@ -97,6 +97,8 @@ void BoidSimulation::init()
             boids[i].id = i;
         }
     } else {
+        // TODO:
+        /*
         std::ifstream init_data_file(initialization_type,  std::ios::binary);
         if (!init_data_file) {
             std::cerr << "Invalid initial placement type or file name: " << initialization_type << std::endl;
@@ -134,6 +136,7 @@ void BoidSimulation::init()
         //this->time_step = 0;
 
         init_data_file.close();
+         */
     }
 }
 
@@ -240,7 +243,8 @@ void BoidSimulation::update()
     }
 }
 
-int BoidSimulation::get(unsigned int id, double* x, double* y, double* z)
+//int BoidSimulation::get(unsigned int id, double* x, double* y, double* z)
+int BoidSimulation::get(unsigned int id, float* x, float* y, float* z)
 {
     *x = boids[id].position.x;
     *y = boids[id].position.y;

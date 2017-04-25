@@ -7,14 +7,15 @@
 
 #include "boid_simulation.h"
 
-class BoidSimulationMultinode: public BoidSimulation {
+class BoidSimulationMultiNode: public BoidSimulation {
 public:
-    BoidSimulationMultinode(int argc, char **argv);
-    ~BoidSimulationMultinode();
+    BoidSimulationMultiNode(int argc, char **argv);
+    ~BoidSimulationMultiNode();
     void init();
     void update();
-    int get(unsigned int id, double* x, double* y, double* z);
-    void set_master(bool master);
+    //int get(unsigned int id, double* x, double* y, double* z);
+    int get(unsigned int id, float* x, float* y, float* z);
+    //void set_master(bool master);
     bool is_master_node(){return is_master;};
 
     double* data_buffer;
@@ -31,7 +32,7 @@ protected:
     unsigned int* data_num_buffer;
     double space_x_lower, space_x_upper, space_y_lower, space_y_upper, space_z_lower, space_z_upper;
     double margin_x_lower, margin_x_upper, margin_y_lower, margin_y_upper, margin_z_lower, margin_z_upper;
-    double padding_x_lower, padding_x_upper, padding_y_lower, padding_y_upper, padding_z_lower, padding_z_upper;
+    //double padding_x_lower, padding_x_upper, padding_y_lower, padding_y_upper, padding_z_lower, padding_z_upper;
     double field_size_local_x, field_size_local_y, field_size_local_z;
     double margin_width;
     bool is_master;

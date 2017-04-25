@@ -40,7 +40,7 @@ void check_endianness() {
 
 bool is_master() {
 #ifdef _MPI
-    return dynamic_cast<BoidSimulationMultinode*>(boid_sim)->is_master_node();
+    return dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->is_master_node();
 #else
     return true;
 #endif
@@ -49,7 +49,7 @@ bool is_master() {
 int main(int argc, char **argv)
 {
 #ifdef _MPI
-    boid_sim = new BoidSimulationMultinode(argc, argv);
+    boid_sim = new BoidSimulationMultiNode(argc, argv);
 #else
     boid_sim = new BoidSimulation();
 #endif
@@ -114,18 +114,27 @@ int main(int argc, char **argv)
     if(is_master()) {
         std::cout << "simulation start." << std::endl;
     }
-    double x, y, z;
-    float fx, fy, fz;
+    //double x, y, z;
+    //float fx, fy, fz;
+    float x, y, z;
     for (unsigned int t=0; t<args.time_step; t++) {
         if (is_master()) {
             for (int i = 0; i < boid_sim->N; i++) {
                 boid_sim->get(i, &x, &y, &z);
+                /*
                 fx = fix_byte_order(float(x));
                 fy = fix_byte_order(float(y));
                 fz = fix_byte_order(float(z));
                 fout.write((char *) &fx, sizeof(fx));
                 fout.write((char *) &fy, sizeof(fy));
                 fout.write((char *) &fz, sizeof(fz));
+                 */
+                x = fix_byte_order(x);
+                y = fix_byte_order(y);
+                z = fix_byte_order(z);
+                fout.write((char *) &x, sizeof(x));
+                fout.write((char *) &y, sizeof(y));
+                fout.write((char *) &z, sizeof(z));
             }
             if(is_master()) {
                 std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;

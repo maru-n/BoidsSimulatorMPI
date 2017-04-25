@@ -59,7 +59,7 @@ int topology_xyz2rank(int x, int y, int z, int *rank)
 }
 
 
-BoidSimulationMultinode::BoidSimulationMultinode(int argc, char **argv)
+BoidSimulationMultiNode::BoidSimulationMultiNode(int argc, char **argv)
 {
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
@@ -106,7 +106,7 @@ BoidSimulationMultinode::BoidSimulationMultinode(int argc, char **argv)
      */
 }
 
-BoidSimulationMultinode::~BoidSimulationMultinode()
+BoidSimulationMultiNode::~BoidSimulationMultiNode()
 {
     MPI_Finalize();
     delete[] data_num_buffer;
@@ -118,7 +118,7 @@ BoidSimulationMultinode::~BoidSimulationMultinode()
     delete[] margin_data_buffer_swap;
 }
 
-void BoidSimulationMultinode::init()
+void BoidSimulationMultiNode::init()
 {
     margin_data_buffer = new double[N*6];
     margin_data_buffer_swap = new double[N*6];
@@ -208,12 +208,16 @@ void BoidSimulationMultinode::init()
     data_buffer = data_buffer_swap;
     data_buffer_swap = tmp;
 
-    gather_data();
+    this->gather_data();
 }
 
 
-void BoidSimulationMultinode::update()
+void BoidSimulationMultiNode::update()
 {
+    /*
+     * Update
+     */
+
     double x, y, z, vx, vy, vz;
 
 
@@ -307,23 +311,41 @@ void BoidSimulationMultinode::update()
         //Boundary conditon
         if (boids[i].position.x < 0.0) {
             boids[i].position.x = field_size + boids[i].position.x;
-        } else if (boids[i].position.x > field_size) {
+        } else if (boids[i].position.x >= field_size) {
             boids[i].position.x = boids[i].position.x - field_size;
         }
         if (boids[i].position.y < 0.0) {
             boids[i].position.y = field_size + boids[i].position.y;
-        } else if (boids[i].position.y > field_size) {
+        } else if (boids[i].position.y >= field_size) {
             boids[i].position.y = boids[i].position.y - field_size;
         }
         if (boids[i].position.z < 0.0) {
             boids[i].position.z = field_size + boids[i].position.z;
-        } else if (boids[i].position.z > field_size) {
+        } else if (boids[i].position.z >= field_size) {
             boids[i].position.z = boids[i].position.z - field_size;
         }
 
         boids[i].get_serialized_data(&data_buffer[i * 6]);
     }
 
+
+    //Debug
+    /*
+    unsigned BUG_ID = 20126;
+    for (int i = 0; i < data_buffer_count/6; ++i) {
+        if (data_id_buffer[i] == BUG_ID) {
+            std::cout << "rank:" << mpi_rank << std::endl;
+            std::cout << data_buffer[i*6+0] << ","
+                      << data_buffer[i*6+1] << ","
+                      << data_buffer[i*6+2] << std::endl;
+        }
+    }
+     */
+
+
+    /*
+     * Comunicate with other nodes
+     */
 
     unsigned int send_data_buffer_count = 0;
     unsigned int recv_data_buffer_count = 0;
@@ -484,6 +506,7 @@ void BoidSimulationMultinode::update()
     }
 
 
+
     //std::cout << mpi_rank << ": n:" << data_buffer_count << ": mn" << margin_data_buffer_count << std::endl;
     this->gather_data();
 
@@ -493,7 +516,8 @@ void BoidSimulationMultinode::update()
     delete[] recv_data_id_buffer;
 }
 
-int BoidSimulationMultinode::get(unsigned int id, double* x, double* y, double* z)
+//int BoidSimulationMultiNode::get(unsigned int id, double* x, double* y, double* z)
+int BoidSimulationMultiNode::get(unsigned int id, float* x, float* y, float* z)
 {
     //std::cout << id << std::endl;
     for (int i = 0; i < N; ++i) {
@@ -504,7 +528,7 @@ int BoidSimulationMultinode::get(unsigned int id, double* x, double* y, double* 
             return 0;
         }
     }
-    //return -1;
+    std::cerr << "exit(-1) called with id:" << id << std::endl;
     exit(-1);
     /*
     *x = data_buffer[6*id+0];
@@ -514,39 +538,39 @@ int BoidSimulationMultinode::get(unsigned int id, double* x, double* y, double* 
      */
 }
 
-void BoidSimulationMultinode::gather_data()
+void BoidSimulationMultiNode::gather_data()
 {
     MPI_Gather(&data_buffer_count, 1, MPI_INT, data_num_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (is_master) {
-
-        MPI_Request request[(mpi_size-1)*2];
-        MPI_Status status[(mpi_size-1)*2];
+        //MPI_Request request[(mpi_size-1)*2];
+        //MPI_Status status[(mpi_size-1)*2];
+        MPI_Request *request = new MPI_Request[(mpi_size-1)*2];
+        MPI_Status *status = new MPI_Status[(mpi_size-1)*2];
         int n = data_num_buffer[0];
-        //std::cout << data_num_buffer[0] << std::endl;
+        //std::cerr << "data_num" << std::endl;
+        //std::cerr << data_num_buffer[0]/6 << ",";
         for (int i = 1; i < mpi_size; ++i) {
             //MPI_Status status;
             MPI_Irecv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, (i*2), MPI_COMM_WORLD, &request[(i-1)*2]);
             MPI_Irecv(&data_id_buffer[n/6], data_num_buffer[i]/6, MPI_UNSIGNED, i, (i*2)+1, MPI_COMM_WORLD, &request[(i-1)*2+1]);
-            /*
-            std::cout << data_num_buffer[i] << std::endl;
-            if (is_master) {std::cout << "test2:" << i << std::endl;}
-            MPI_Recv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, (i*2), MPI_COMM_WORLD, &status[(i-1)*2]);
-            if (is_master) {std::cout << "test3:" << i << std::endl;}
-            MPI_Recv(&data_id_buffer[n/6], data_num_buffer[i]/6, MPI_UNSIGNED, i, (i*2)+1, MPI_COMM_WORLD, &status[(i-1)*2+1]);
-            if (is_master) {std::cout << "test4:" << i << std::endl;}
-             */
+            //std::cerr << data_num_buffer[i]/6 << ",";
             n += data_num_buffer[i];
         }
+        //std::cerr << std::endl;
+
+        MPI_Waitall((mpi_size-1)*2, request, status);
+        delete[] request;
+        delete[] status;
+
+        // Debug
+        //std::cerr << "data_id" << std::endl;
         /*
         for (int j = 0; j < N; ++j) {
-            std::cout << data_id_buffer[j] << ",";
+            std::cerr << data_id_buffer[j] << ",";
         }
-        std::cout << std::endl;
+        std::cerr << std::endl;
          */
-        //if (is_master) {std::cout << "test2" << std::endl;}
-        MPI_Waitall((mpi_size-1)*2, request, status);
-        //std::cout << mpi_rank << "/" << mpi_size << std::endl;
-        //if (is_master) {std::cout << "test3" << std::endl;}
+
     } else {
         MPI_Request request[2];
         MPI_Status status[2];
