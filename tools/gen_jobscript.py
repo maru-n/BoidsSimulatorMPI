@@ -61,6 +61,7 @@ def generate_script(setting, population, field_size, time_step, data_safix=""):
             else:
                 template = template_mpi
                 template_data['node'] = '{}x{}x{}'.format(k, k, k)
+                #template_data['elapse'] = str(timedelta(seconds=max_time-1))
             return pystache.render(template, template_data)
 
 
