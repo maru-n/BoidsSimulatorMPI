@@ -37,9 +37,9 @@ const double FIELD_SIZE = 1;
 const double SIGHT_DISTANCE_SEPARATION = 0.1;
 const double SIGHT_DISTANCE_ALIGNMENT = 0.1;
 const double SIGHT_DISTANCE_COHESION = 0.1;
-const double SIGHT_ANGLE_SEPARATION = 1; // 09
-const double SIGHT_ANGLE_ALIGNMENT = 1; // 07
-const double SIGHT_ANGLE_COHESION = 1; //08
+const double SIGHT_ANGLE_SEPARATION = 0.9; // 09
+const double SIGHT_ANGLE_ALIGNMENT = 0.7; // 07
+const double SIGHT_ANGLE_COHESION = 0.8; //08
 
 const double COEFF_SEPARATION = 0.0001; // 0.00002
 const double COEFF_COHESION = 0.1; // 0.02
