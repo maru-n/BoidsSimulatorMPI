@@ -19,8 +19,10 @@ public:
 	Boid(Vector3D _p, Vector3D _v);
 	void set(double x, double y, double z, double vx, double vy, double vz);
 	void get(double* x, double* y, double* z, double* vx, double* vy, double* vz);
-	void set_serialized_data(double* buffer);
-	void get_serialized_data(double* buffer);
+	//void set_serialized_data(double* buffer);
+	void set_serialized_data(float* buffer);
+	//void get_serialized_data(double* buffer);
+	void get_serialized_data(float* buffer);
 	bool isInsideArea(Boid &_b, double _sighe_distance, double _sight_angle);
     //bool isInsideSeparationArea(Boid &_b);
     //bool isInsideAlignmentArea(Boid &_b);

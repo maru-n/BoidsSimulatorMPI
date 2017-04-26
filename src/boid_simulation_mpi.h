@@ -21,19 +21,33 @@ public:
 protected:
     void gather_data();
 
+    Boid this_boid, that_boid;
+
     unsigned int data_buffer_count;
-    double* data_buffer;
-    double* data_buffer_swap;
+    //double* data_buffer;
+    //double* data_buffer_swap;
+    float* data_buffer;
+    float* data_buffer_swap;
     unsigned* data_id_buffer;
     unsigned* data_id_buffer_swap;
 
     unsigned int margin_data_buffer_count;
-    double* margin_data_buffer;
-    double* margin_data_buffer_swap;
+    //double* margin_data_buffer;
+    //double* margin_data_buffer_swap;
+    float* margin_data_buffer;
+    float* margin_data_buffer_swap;
     unsigned* margin_data_id_buffer;
     unsigned* margin_data_id_buffer_swap;
 
+    //double *send_data_buffer;
+    //double *recv_data_buffer;
+    float *send_data_buffer;
+    float *recv_data_buffer;
+    unsigned *send_data_id_buffer;
+    unsigned *recv_data_id_buffer;
+
     unsigned int* data_num_buffer;
+
     double space_x_lower, space_x_upper, space_y_lower, space_y_upper, space_z_lower, space_z_upper;
     double margin_x_lower, margin_x_upper, margin_y_lower, margin_y_upper, margin_z_lower, margin_z_upper;
     //double padding_x_lower, padding_x_upper, padding_y_lower, padding_y_upper, padding_z_lower, padding_z_upper;

@@ -64,7 +64,8 @@ void Boid::get(double* x, double* y, double* z, double* vx, double* vy, double* 
 }
 
 
-void Boid::set_serialized_data(double* buffer)
+//void Boid::set_serialized_data(double* buffer)
+void Boid::set_serialized_data(float* buffer)
 {
 	position.x = buffer[0];
 	position.y = buffer[1];
@@ -74,7 +75,8 @@ void Boid::set_serialized_data(double* buffer)
 	velocity.z = buffer[5];
 }
 
-void Boid::get_serialized_data(double* buffer)
+//void Boid::get_serialized_data(double* buffer)
+void Boid::get_serialized_data(float* buffer)
 {
 	buffer[0] = position.x;
 	buffer[1] = position.y;
