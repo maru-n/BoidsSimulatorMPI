@@ -97,13 +97,6 @@ BoidSimulationMultiNode::BoidSimulationMultiNode(int argc, char **argv)
             }
         }
     }
-    /*
-    std::cout << "rank:" << mpi_rank << "(" << mpi_position_x << "," << mpi_position_y << "," << mpi_position_z << ")";
-    for (int i = 0; i < neighborhood_num; ++i) {
-        std::cout << neighborhood_rank[i] << ",";
-    }
-    std::cout << std::endl;
-     */
 }
 
 BoidSimulationMultiNode::~BoidSimulationMultiNode()
@@ -116,16 +109,22 @@ BoidSimulationMultiNode::~BoidSimulationMultiNode()
     delete[] data_buffer_swap;
     delete[] margin_data_buffer;
     delete[] margin_data_buffer_swap;
+    delete[] margin_data_id_buffer;
+    delete[] margin_data_id_buffer_swap;
 }
 
 void BoidSimulationMultiNode::init()
 {
+    data_buffer = new double[N*6];
+    data_buffer_swap = new double[N*6];
+    data_id_buffer = new unsigned[N];
+    data_id_buffer_swap = new unsigned[N];
+
     margin_data_buffer = new double[N*6];
     margin_data_buffer_swap = new double[N*6];
-    data_buffer = new double[N*6];
-    data_id_buffer = new unsigned[N];
-    data_buffer_swap = new double[N*6];
-    data_id_buffer_swap = new unsigned[N];
+    margin_data_id_buffer = new unsigned[N];
+    margin_data_id_buffer_swap = new unsigned[N];
+
     data_num_buffer = new unsigned int[mpi_size];
     field_size_local_x = field_size / mpi_topology_x;
     field_size_local_y = field_size / mpi_topology_y;
@@ -180,20 +179,9 @@ void BoidSimulationMultiNode::init()
         vz = data_buffer[i*6+5];
         boids[i].set(x, y, z, vx, vy, vz);
 
-        if ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<=margin_x_upper) : (x>=margin_x_lower||x<=margin_x_upper)) &&
-             (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&y<=margin_y_upper) : (y>=margin_y_lower||y<=margin_y_upper)) &&
-             (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&z<=margin_z_upper) : (z>=margin_z_lower||z<=margin_z_upper))) {
-            margin_data_buffer[margin_data_buffer_count+0] = x;
-            margin_data_buffer[margin_data_buffer_count+1] = y;
-            margin_data_buffer[margin_data_buffer_count+2] = z;
-            margin_data_buffer[margin_data_buffer_count+3] = vx;
-            margin_data_buffer[margin_data_buffer_count+4] = vy;
-            margin_data_buffer[margin_data_buffer_count+5] = vz;
-            margin_data_buffer_count +=6;
-        }
-        if (x >= space_x_lower && x < space_x_upper &&
-            y >= space_y_lower && y < space_y_upper &&
-            z >= space_z_lower && z < space_z_upper) {
+        if (x >= space_x_lower && (mpi_position_x+1==mpi_topology_x ? x <= space_x_upper : x < space_x_upper) &&
+            y >= space_y_lower && (mpi_position_y+1==mpi_topology_y ? y <= space_y_upper : y < space_y_upper) &&
+            z >= space_z_lower && (mpi_position_z+1==mpi_topology_z ? z <= space_z_upper : z < space_z_upper) ) {
             data_id_buffer[data_buffer_count/6] = id;
             data_buffer_swap[data_buffer_count+0] = x;
             data_buffer_swap[data_buffer_count+1] = y;
@@ -202,6 +190,19 @@ void BoidSimulationMultiNode::init()
             data_buffer_swap[data_buffer_count+4] = vy;
             data_buffer_swap[data_buffer_count+5] = vz;
             data_buffer_count += 6;
+        }
+
+        if ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<=margin_x_upper) : (x>=margin_x_lower||x<=margin_x_upper)) &&
+             (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&y<=margin_y_upper) : (y>=margin_y_lower||y<=margin_y_upper)) &&
+             (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&z<=margin_z_upper) : (z>=margin_z_lower||z<=margin_z_upper))) {
+            margin_data_id_buffer[margin_data_buffer_count/6] = id;
+            margin_data_buffer[margin_data_buffer_count+0] = x;
+            margin_data_buffer[margin_data_buffer_count+1] = y;
+            margin_data_buffer[margin_data_buffer_count+2] = z;
+            margin_data_buffer[margin_data_buffer_count+3] = vx;
+            margin_data_buffer[margin_data_buffer_count+4] = vy;
+            margin_data_buffer[margin_data_buffer_count+5] = vz;
+            margin_data_buffer_count +=6;
         }
     }
     double* tmp = data_buffer;
@@ -229,6 +230,7 @@ void BoidSimulationMultiNode::update()
 #pragma omp for
 //#pragma omp for schedule(guided)
 #endif
+    Boid this_boid, that_boid;
     for(int i=0; i<data_buffer_count/6; i++) {
         dv_coh[i].x = dv_coh[i].y = dv_coh[i].z =
         dv_sep[i].x = dv_sep[i].y = dv_sep[i].z =
@@ -237,56 +239,55 @@ void BoidSimulationMultiNode::update()
         int neivers_num_sep = 0;
         int neivers_num_ali = 0;
 
-        boids[i].set_serialized_data(&data_buffer[i*6]);
+        this_boid.set_serialized_data(&data_buffer[i*6]);
+
         for(int j=0; j<margin_data_buffer_count/6; j++) {
-            boids[j].set_serialized_data(&margin_data_buffer[j*6]);
 
+            that_boid.set_serialized_data(&margin_data_buffer[j*6]);
 
-            Vector3D boids_j_pos_tmp = boids[j].position;
-
-            if ((boids_j_pos_tmp.x - boids[i].position.x) > field_size/2) {
-                boids_j_pos_tmp.x -= field_size;
-            } else if (boids[i].position.x - boids_j_pos_tmp.x > field_size/2) {
-                boids_j_pos_tmp.x += field_size;
+            if ((that_boid.position.x - this_boid.position.x) > field_size/2) {
+                that_boid.position.x -= field_size;
+            } else if (this_boid.position.x - that_boid.position.x > field_size/2) {
+                that_boid.position.x += field_size;
             }
-            if ((boids_j_pos_tmp.y - boids[i].position.y) > field_size/2) {
-                boids_j_pos_tmp.y -= field_size;
-            } else if (boids[i].position.y - boids_j_pos_tmp.y > field_size/2) {
-                boids_j_pos_tmp.y += field_size;
+            if ((that_boid.position.y - this_boid.position.y) > field_size/2) {
+                that_boid.position.y -= field_size;
+            } else if (this_boid.position.y - that_boid.position.y > field_size/2) {
+                that_boid.position.y += field_size;
             }
-            if ((boids_j_pos_tmp.z - boids[i].position.z) > field_size/2) {
-                boids_j_pos_tmp.z -= field_size;
-            } else if (boids[i].position.z - boids_j_pos_tmp.z > field_size/2) {
-                boids_j_pos_tmp.z += field_size;
+            if ((that_boid.position.z - this_boid.position.z) > field_size/2) {
+                that_boid.position.z -= field_size;
+            } else if (this_boid.position.z - that_boid.position.z > field_size/2) {
+                that_boid.position.z += field_size;
             }
 
-            Boid target_boid(boids_j_pos_tmp);
-            if( i != j ){
+            if( data_id_buffer[i] != margin_data_id_buffer[j] ){
                 // Cohesion
-                if (boids[i].isInsideArea(target_boid, cohesion.sight_distance, cohesion.sight_agnle)){
+                if (this_boid.isInsideArea(that_boid, cohesion.sight_distance, cohesion.sight_agnle)){
                     neivers_num_coh ++;
-                    dv_coh[i] += target_boid.position;
+                    dv_coh[i] += that_boid.position;
                 }
                 // Separation
-                if (boids[i].isInsideArea(target_boid, separation.sight_distance, separation.sight_agnle)) {
+                if (this_boid.isInsideArea(that_boid, separation.sight_distance, separation.sight_agnle)) {
                     neivers_num_sep ++;
-                    dv_sep[i] += (boids[i].position - target_boid.position).normalized();
+                    dv_sep[i] += (this_boid.position - that_boid.position).normalized();
                 }
                 // Alignment
-                if (boids[i].isInsideArea(target_boid, alignment.sight_distance, alignment.sight_agnle)) {
+                if (this_boid.isInsideArea(that_boid, alignment.sight_distance, alignment.sight_agnle)) {
                     neivers_num_ali ++;
-                    dv_ali[i] += boids[j].velocity;
+                    dv_ali[i] += that_boid.velocity;
                 }
             }
+
         }
         if (neivers_num_coh != 0) {
-            dv_coh[i] = dv_coh[i] / neivers_num_coh - boids[i].position;
+            dv_coh[i] = dv_coh[i] / neivers_num_coh - this_boid.position;
         }
         if (neivers_num_sep != 0) {
             //dv_sep[i] = dv_sep[i] / neivers_num_sep;
         }
         if (neivers_num_ali != 0) {
-            dv_ali[i] = dv_ali[i] / neivers_num_ali - boids[i].velocity;
+            dv_ali[i] = dv_ali[i] / neivers_num_ali - this_boid.velocity;
         }
         dv[i] = cohesion.force_coefficient*dv_coh[i] + separation.force_coefficient*dv_sep[i] + alignment.force_coefficient*dv_ali[i];
 
@@ -329,20 +330,6 @@ void BoidSimulationMultiNode::update()
     }
 
 
-    //Debug
-    /*
-    unsigned BUG_ID = 20126;
-    for (int i = 0; i < data_buffer_count/6; ++i) {
-        if (data_id_buffer[i] == BUG_ID) {
-            std::cout << "rank:" << mpi_rank << std::endl;
-            std::cout << data_buffer[i*6+0] << ","
-                      << data_buffer[i*6+1] << ","
-                      << data_buffer[i*6+2] << std::endl;
-        }
-    }
-     */
-
-
     /*
      * Comunicate with other nodes
      */
@@ -380,14 +367,15 @@ void BoidSimulationMultiNode::update()
             send_data_id_buffer[send_data_buffer_count/6] = id;
             send_data_buffer_count+=6;
         } else {
+            data_id_buffer_swap[data_buffer_count_new/6] = id;
             data_buffer_swap[data_buffer_count_new+0] = x;
             data_buffer_swap[data_buffer_count_new+1] = y;
             data_buffer_swap[data_buffer_count_new+2] = z;
             data_buffer_swap[data_buffer_count_new+3] = vx;
             data_buffer_swap[data_buffer_count_new+4] = vy;
             data_buffer_swap[data_buffer_count_new+5] = vz;
-            data_id_buffer_swap[data_buffer_count_new/6] = id;
             data_buffer_count_new += 6;
+            margin_data_id_buffer_swap[margin_data_buffer_count_new/6] = id;
             margin_data_buffer_swap[margin_data_buffer_count_new+0] = x;
             margin_data_buffer_swap[margin_data_buffer_count_new+1] = y;
             margin_data_buffer_swap[margin_data_buffer_count_new+2] = z;
@@ -398,21 +386,26 @@ void BoidSimulationMultiNode::update()
 
         }
     }
+    data_buffer_count = data_buffer_count_new;
+    margin_data_buffer_count = margin_data_buffer_count_new;
+
     double* tmp;
     tmp = data_buffer;
     data_buffer = data_buffer_swap;
     data_buffer_swap = tmp;
-    data_buffer_count = data_buffer_count_new;
 
     tmp = margin_data_buffer;
     margin_data_buffer = margin_data_buffer_swap;
     margin_data_buffer_swap = tmp;
-    margin_data_buffer_count = margin_data_buffer_count_new;
 
     unsigned* tmp2;
     tmp2 = data_id_buffer;
     data_id_buffer = data_id_buffer_swap;
     data_id_buffer_swap = tmp2;
+
+    tmp2 = margin_data_id_buffer;
+    margin_data_id_buffer = margin_data_id_buffer_swap;
+    margin_data_id_buffer_swap = tmp2;
 
     MPI_Request request1[27*2];
     MPI_Request request2[27*4];
@@ -440,15 +433,6 @@ void BoidSimulationMultiNode::update()
 
     MPI_Waitall(request_n, request2, status2);
 
-    /*
-    unsigned int a = 0;
-    for (int i = 0; i < neighborhood_num; ++i) {
-        //std::cout << mpi_rank << "<-" << neighborhood_rank[i] << ":" << recv_data_buffer[a] << std::endl;
-        a += data_num[i];
-    }
-     */
-
-
     for (int i = 0; i < recv_data_buffer_count/6; i++) {
         id = recv_data_id_buffer[i];
         x = recv_data_buffer[i*6+0];
@@ -458,9 +442,9 @@ void BoidSimulationMultiNode::update()
         vy = recv_data_buffer[i*6+4];
         vz = recv_data_buffer[i*6+5];
 
-        if (x >= space_x_lower && x < space_x_upper &&
-            y >= space_y_lower && y < space_y_upper &&
-            z >= space_z_lower && z < space_z_upper) {
+        if (x >= space_x_lower && (mpi_position_x+1==mpi_topology_x ? x <= space_x_upper : x < space_x_upper) &&
+            y >= space_y_lower && (mpi_position_y+1==mpi_topology_y ? y <= space_y_upper : y < space_y_upper) &&
+            z >= space_z_lower && (mpi_position_z+1==mpi_topology_z ? z <= space_z_upper : z < space_z_upper) ) {
             data_id_buffer[data_buffer_count/6] = id;
             data_buffer[data_buffer_count+0] = x;
             data_buffer[data_buffer_count+1] = y;
@@ -469,6 +453,11 @@ void BoidSimulationMultiNode::update()
             data_buffer[data_buffer_count+4] = vy;
             data_buffer[data_buffer_count+5] = vz;
             data_buffer_count += 6;
+        }
+        if ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<=margin_x_upper) : (x>=margin_x_lower||x<=margin_x_upper)) &&
+             (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&y<=margin_y_upper) : (y>=margin_y_lower||y<=margin_y_upper)) &&
+             (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&z<=margin_z_upper) : (z>=margin_z_lower||z<=margin_z_upper))) {
+            margin_data_id_buffer[margin_data_buffer_count/6] = id;
             margin_data_buffer[margin_data_buffer_count+0] = x;
             margin_data_buffer[margin_data_buffer_count+1] = y;
             margin_data_buffer[margin_data_buffer_count+2] = z;
@@ -480,34 +469,6 @@ void BoidSimulationMultiNode::update()
 
     }
 
-    for (int i = 0; i < recv_data_buffer_count/6; i++) {
-        x = recv_data_buffer[i*6+0];
-        y = recv_data_buffer[i*6+1];
-        z = recv_data_buffer[i*6+2];
-        vx = recv_data_buffer[i*6+3];
-        vy = recv_data_buffer[i*6+4];
-        vz = recv_data_buffer[i*6+5];
-
-        if (!(x >= space_x_lower && x < space_x_upper &&
-            y >= space_y_lower && y < space_y_upper &&
-            z >= space_z_lower && z < space_z_upper)
-                &&
-            ( (margin_x_lower < margin_x_upper ? (x>=margin_x_lower&&x<margin_x_upper) : (x>=margin_x_lower||x<margin_x_upper)) &&
-              (margin_y_lower < margin_y_upper ? (y>=margin_y_lower&&y<margin_y_upper) : (y>=margin_y_lower||y<margin_y_upper)) &&
-              (margin_z_lower < margin_z_upper ? (z>=margin_z_lower&&z<margin_z_upper) : (z>=margin_z_lower||z<margin_z_upper)))){
-            margin_data_buffer[margin_data_buffer_count+0] = x;
-            margin_data_buffer[margin_data_buffer_count+1] = y;
-            margin_data_buffer[margin_data_buffer_count+2] = z;
-            margin_data_buffer[margin_data_buffer_count+3] = vx;
-            margin_data_buffer[margin_data_buffer_count+4] = vy;
-            margin_data_buffer[margin_data_buffer_count+5] = vz;
-            margin_data_buffer_count +=6;
-        }
-    }
-
-
-
-    //std::cout << mpi_rank << ": n:" << data_buffer_count << ": mn" << margin_data_buffer_count << std::endl;
     this->gather_data();
 
     delete[] send_data_buffer;
@@ -519,7 +480,6 @@ void BoidSimulationMultiNode::update()
 //int BoidSimulationMultiNode::get(unsigned int id, double* x, double* y, double* z)
 int BoidSimulationMultiNode::get(unsigned int id, float* x, float* y, float* z)
 {
-    //std::cout << id << std::endl;
     for (int i = 0; i < N; ++i) {
         if(data_id_buffer[i] == id) {
             *x = data_buffer[6*i+0];
@@ -542,34 +502,19 @@ void BoidSimulationMultiNode::gather_data()
 {
     MPI_Gather(&data_buffer_count, 1, MPI_INT, data_num_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
     if (is_master) {
-        //MPI_Request request[(mpi_size-1)*2];
-        //MPI_Status status[(mpi_size-1)*2];
         MPI_Request *request = new MPI_Request[(mpi_size-1)*2];
         MPI_Status *status = new MPI_Status[(mpi_size-1)*2];
         int n = data_num_buffer[0];
-        //std::cerr << "data_num" << std::endl;
-        //std::cerr << data_num_buffer[0]/6 << ",";
         for (int i = 1; i < mpi_size; ++i) {
             //MPI_Status status;
             MPI_Irecv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, (i*2), MPI_COMM_WORLD, &request[(i-1)*2]);
             MPI_Irecv(&data_id_buffer[n/6], data_num_buffer[i]/6, MPI_UNSIGNED, i, (i*2)+1, MPI_COMM_WORLD, &request[(i-1)*2+1]);
-            //std::cerr << data_num_buffer[i]/6 << ",";
             n += data_num_buffer[i];
         }
-        //std::cerr << std::endl;
 
         MPI_Waitall((mpi_size-1)*2, request, status);
         delete[] request;
         delete[] status;
-
-        // Debug
-        //std::cerr << "data_id" << std::endl;
-        /*
-        for (int j = 0; j < N; ++j) {
-            std::cerr << data_id_buffer[j] << ",";
-        }
-        std::cerr << std::endl;
-         */
 
     } else {
         MPI_Request request[2];

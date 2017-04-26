@@ -18,17 +18,21 @@ public:
     //void set_master(bool master);
     bool is_master_node(){return is_master;};
 
-    double* data_buffer;
-    unsigned* data_id_buffer;
 protected:
     void gather_data();
 
+    unsigned int data_buffer_count;
+    double* data_buffer;
     double* data_buffer_swap;
+    unsigned* data_id_buffer;
     unsigned* data_id_buffer_swap;
+
+    unsigned int margin_data_buffer_count;
     double* margin_data_buffer;
     double* margin_data_buffer_swap;
-    unsigned int margin_data_buffer_count;
-    unsigned int data_buffer_count;
+    unsigned* margin_data_id_buffer;
+    unsigned* margin_data_id_buffer_swap;
+
     unsigned int* data_num_buffer;
     double space_x_lower, space_x_upper, space_y_lower, space_y_upper, space_z_lower, space_z_upper;
     double margin_x_lower, margin_x_upper, margin_y_lower, margin_y_upper, margin_z_lower, margin_z_upper;
