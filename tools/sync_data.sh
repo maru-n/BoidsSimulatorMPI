@@ -11,4 +11,4 @@ if [[ ${target_dir} == '' ]]; then
     target_dir='./'
 fi
 
-rsync --exclude old --exclude masumori --exclude trash --exclude backup* --copy-links -ahv -P -e ssh klogin:~/data/* ${target_dir}
+rsync --exclude clean --exclude old --exclude masumori --exclude trash --exclude backup* --copy-links -ahv -P -e ssh klogin:~/data/* ${target_dir}
