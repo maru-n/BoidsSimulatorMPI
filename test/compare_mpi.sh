@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 export N=1000
-export T=30
+#export T=30
+export T=300
 export build_dir=build
-export setting_file="../../settings/test.ini"
+#export setting_file="../../settings/test.ini"
+export setting_file="../../settings/example.ini"
 export CMAKE_OPTIONS="-D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++"
 
 export data_name=`mktemp`
@@ -15,10 +17,10 @@ cd ${build_dir}
 cmake ${CMAKE_OPTIONS} ../../ || exit -1
 make boidsim boidsim_mpi || exit -1
 
-echo -e "calculating normal version... =>" ${data_name}
+echo -e "calculating normal version to " ${data_name}
 ./boidsim -s ${setting_file} -o ${data_name} -T $T > /dev/null || exit -1
 
-echo -e "calculating MPI version... =>" ${data_name_mpi}
+echo -e "calculating MPI version to" ${data_name_mpi}
 mpiexec -n 8 ./boidsim_mpi -s ${setting_file} -o ${data_name_mpi} -T $T > /dev/null || exit -1
 
 cmp ${data_name} ${data_name_mpi} 0 0> /dev/null

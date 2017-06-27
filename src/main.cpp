@@ -48,6 +48,8 @@ bool is_master() {
 
 int main(int argc, char **argv)
 {
+    bool FORCE_OUTPUT = false;
+
 #ifdef _MPI
     boid_sim = new BoidSimulationMultiNode(argc, argv);
 #else
@@ -117,6 +119,7 @@ int main(int argc, char **argv)
     //double x, y, z;
     //float fx, fy, fz;
     float x, y, z;
+    float coh_x, coh_y, coh_z, sep_x, sep_y, sep_z, ali_x, ali_y, ali_z;
     for (unsigned int t=0; t<args.time_step; t++) {
         if (is_master()) {
             for (int i = 0; i < boid_sim->N; i++) {
@@ -135,6 +138,18 @@ int main(int argc, char **argv)
                 fout.write((char *) &x, sizeof(x));
                 fout.write((char *) &y, sizeof(y));
                 fout.write((char *) &z, sizeof(z));
+                if (FORCE_OUTPUT) {
+                    boid_sim->get_force(i, &coh_x, &coh_y, &coh_z, &sep_x, &sep_y, &sep_z, &ali_x, &ali_y, &ali_z);
+                    fout.write((char *) &coh_x, sizeof(coh_x));
+                    fout.write((char *) &coh_y, sizeof(coh_y));
+                    fout.write((char *) &coh_z, sizeof(coh_z));
+                    fout.write((char *) &sep_x, sizeof(sep_x));
+                    fout.write((char *) &sep_y, sizeof(sep_y));
+                    fout.write((char *) &sep_z, sizeof(sep_z));
+                    fout.write((char *) &ali_x, sizeof(ali_x));
+                    fout.write((char *) &ali_y, sizeof(ali_y));
+                    fout.write((char *) &ali_z, sizeof(ali_z));
+                }
             }
             if(is_master()) {
                 std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;

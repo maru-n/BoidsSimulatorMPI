@@ -36,6 +36,8 @@ public:
     bool is_openmp_enabled() const;
     int get_max_threads() const;
 
+    int get_force(unsigned int id, float* coh_x, float* coh_y, float* coh_z, float* sep_x, float* sep_y, float* sep_z, float* ali_x, float* ali_y, float* ali_z);
+
     unsigned int N;
     unsigned int time_step;
     double field_size;

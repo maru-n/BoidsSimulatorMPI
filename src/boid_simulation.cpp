@@ -158,6 +158,7 @@ void BoidSimulation::update()
         int neivers_num_coh = 0;
         int neivers_num_sep = 0;
         int neivers_num_ali = 0;
+        //if(i==13) {std::cerr << "#13 see ";}
         for(int j=0; j<N; j++){
             Vector3D boids_j_pos_tmp = boids[j].position;
 
@@ -181,21 +182,25 @@ void BoidSimulation::update()
             if( i != j ){
                 // Cohesion
                 if (boids[i].isInsideArea(target_boid, cohesion.sight_distance, cohesion.sight_agnle)){
+                    //if(i==13) {std::cerr << j << ", ";}
                     neivers_num_coh ++;
                     dv_coh[i] += target_boid.position;
                 }
                 // Separation
                 if (boids[i].isInsideArea(target_boid, separation.sight_distance, separation.sight_agnle)) {
+                    //if(i==13) {std::cerr << j << ", ";}
                     neivers_num_sep ++;
                     dv_sep[i] += (boids[i].position - target_boid.position).normalized();
                 }
                 // Alignment
                 if (boids[i].isInsideArea(target_boid, alignment.sight_distance, alignment.sight_agnle)) {
+                    //if(i==13) {std::cerr << j << ", ";}
                     neivers_num_ali ++;
                     dv_ali[i] += boids[j].velocity;
                 }
             }
         }
+        //if(i==13) {std::cerr << std::endl;}
         if (neivers_num_coh != 0) {
             dv_coh[i] = dv_coh[i] / neivers_num_coh - boids[i].position;
         }
@@ -227,6 +232,7 @@ void BoidSimulation::update()
         //Boundary conditon
         if(boids[i].position.x < 0.0) {
             boids[i].position.x = field_size_X + boids[i].position.x;
+
         } else if(boids[i].position.x > field_size_X) {
             boids[i].position.x = boids[i].position.x - field_size_X;
         }
@@ -251,6 +257,24 @@ int BoidSimulation::get(unsigned int id, float* x, float* y, float* z)
     *z = boids[id].position.z;
     return 0;
 }
+
+int BoidSimulation::get_force(unsigned int id, float* coh_x, float* coh_y, float* coh_z, float* sep_x, float* sep_y, float* sep_z, float* ali_x, float* ali_y, float* ali_z)
+{
+    *coh_x = (float)cohesion.force_coefficient*dv_coh[id].x;
+    *coh_y = (float)cohesion.force_coefficient*dv_coh[id].y;
+    *coh_z = (float)cohesion.force_coefficient*dv_coh[id].z;
+
+    *sep_x = (float)separation.force_coefficient*dv_sep[id].x;
+    *sep_y = (float)separation.force_coefficient*dv_sep[id].y;
+    *sep_z = (float)separation.force_coefficient*dv_sep[id].z;
+
+    *ali_x = (float)alignment.force_coefficient*dv_ali[id].x;
+    *ali_y = (float)alignment.force_coefficient*dv_ali[id].y;
+    *ali_z = (float)alignment.force_coefficient*dv_ali[id].z;
+
+    return 0;
+}
+
 
 bool BoidSimulation::is_openmp_enabled() const
 {

@@ -6,6 +6,8 @@
 #include "boid_simulation_mpi.h"
 #include "mpi.h"
 #include <mpi-ext.h>
+#include <cfloat>
+#include <cmath>
 
 using namespace std;
 
@@ -57,7 +59,7 @@ int topology_xyz2rank(int x, int y, int z, int *rank)
     return 0;
 #endif
 }
-
+int step = 0;
 
 BoidSimulationMultiNode::BoidSimulationMultiNode(int argc, char **argv)
 {
@@ -195,10 +197,14 @@ void BoidSimulationMultiNode::init()
         vx = data_buffer_swap[i*6+3];
         vy = data_buffer_swap[i*6+4];
         vz = data_buffer_swap[i*6+5];
-
+        /*
         if (x >= space_x_lower && (mpi_position_x+1==mpi_topology_x ? x <= space_x_upper : x < space_x_upper) &&
             y >= space_y_lower && (mpi_position_y+1==mpi_topology_y ? y <= space_y_upper : y < space_y_upper) &&
             z >= space_z_lower && (mpi_position_z+1==mpi_topology_z ? z <= space_z_upper : z < space_z_upper) ) {
+            */
+        if (x >= space_x_lower &&  x < space_x_upper &&
+            y >= space_y_lower &&  y < space_y_upper &&
+            z >= space_z_lower &&  z < space_z_upper ) {
             data_id_buffer[data_buffer_count/6] = id;
             data_buffer[data_buffer_count+0] = x;
             data_buffer[data_buffer_count+1] = y;
@@ -255,7 +261,7 @@ void BoidSimulationMultiNode::update()
         int neivers_num_ali = 0;
 
         this_boid.set_serialized_data(&data_buffer[i*6]);
-
+        //if(data_id_buffer[i]==13) {std::cerr << "step:" << step << " #13 see ";}
         for(int j=0; j<margin_data_buffer_count/6; j++) {
 
             that_boid.set_serialized_data(&margin_data_buffer[j*6]);
@@ -279,22 +285,25 @@ void BoidSimulationMultiNode::update()
             if( data_id_buffer[i] != margin_data_id_buffer[j] ){
                 // Cohesion
                 if (this_boid.isInsideArea(that_boid, cohesion.sight_distance, cohesion.sight_agnle)){
+                    //if(data_id_buffer[i]==13) {std::cerr << margin_data_id_buffer[j] << ", ";}
                     neivers_num_coh ++;
                     dv_coh[i] += that_boid.position;
                 }
                 // Separation
                 if (this_boid.isInsideArea(that_boid, separation.sight_distance, separation.sight_agnle)) {
+                    //if(data_id_buffer[i]==13) {std::cerr << margin_data_id_buffer[j] << ", ";}
                     neivers_num_sep ++;
                     dv_sep[i] += (this_boid.position - that_boid.position).normalized();
                 }
                 // Alignment
                 if (this_boid.isInsideArea(that_boid, alignment.sight_distance, alignment.sight_agnle)) {
+                    //if(data_id_buffer[i]==13) {std::cerr << margin_data_id_buffer[j] << ", ";}
                     neivers_num_ali ++;
                     dv_ali[i] += that_boid.velocity;
                 }
             }
-
         }
+        //if(data_id_buffer[i]==13) {std::cerr << std::endl;}
         if (neivers_num_coh != 0) {
             dv_coh[i] = dv_coh[i] / neivers_num_coh - this_boid.position;
         }
@@ -326,22 +335,43 @@ void BoidSimulationMultiNode::update()
 
         //Boundary conditon
         if (boids[i].position.x < 0.0) {
-            boids[i].position.x = field_size + boids[i].position.x;
+            boids[i].position.x = (float) (field_size + boids[i].position.x);
+            // Take care of rounding error
+            if (std::abs(boids[i].position.x - field_size) <= FLT_EPSILON ) {
+                boids[i].position.x = 0.0f;
+            }
         } else if (boids[i].position.x >= field_size) {
-            boids[i].position.x = boids[i].position.x - field_size;
+            boids[i].position.x = (float) (boids[i].position.x - field_size);
         }
         if (boids[i].position.y < 0.0) {
-            boids[i].position.y = field_size + boids[i].position.y;
+            boids[i].position.y = (float) (field_size + boids[i].position.y);
+            // Take care of rounding error
+            if (std::abs(boids[i].position.y - field_size) <= FLT_EPSILON ) {
+                boids[i].position.y = 0.0f;
+            }
         } else if (boids[i].position.y >= field_size) {
-            boids[i].position.y = boids[i].position.y - field_size;
+            boids[i].position.y = (float) (boids[i].position.y - field_size);
         }
         if (boids[i].position.z < 0.0) {
-            boids[i].position.z = field_size + boids[i].position.z;
+            boids[i].position.z = (float) (field_size + boids[i].position.z);
+            // Take care of rounding error
+            if (std::abs(boids[i].position.z - field_size) <= FLT_EPSILON ) {
+                boids[i].position.z = 0.0f;
+            }
         } else if (boids[i].position.z >= field_size) {
-            boids[i].position.z = boids[i].position.z - field_size;
+            boids[i].position.z = (float) (boids[i].position.z - field_size);
         }
 
         boids[i].get_serialized_data(&data_buffer[i * 6]);
+
+        //DEBUG CODE
+        /*
+        unsigned bug_id = 27558;
+        if (data_id_buffer[i] == bug_id) {
+            std::cerr << "(" << mpi_position_x << "," << mpi_position_y << "," << mpi_position_z << ")"
+                      << data_buffer[i*6+0] << ","  << data_buffer[i*6+1] << ","  << data_buffer[i*6+2] << std::endl;
+        }
+         */
     }
 
 
@@ -451,10 +481,14 @@ void BoidSimulationMultiNode::update()
         vx = recv_data_buffer[i*6+3];
         vy = recv_data_buffer[i*6+4];
         vz = recv_data_buffer[i*6+5];
-
+        /*
         if (x >= space_x_lower && (mpi_position_x+1==mpi_topology_x ? x <= space_x_upper : x < space_x_upper) &&
             y >= space_y_lower && (mpi_position_y+1==mpi_topology_y ? y <= space_y_upper : y < space_y_upper) &&
             z >= space_z_lower && (mpi_position_z+1==mpi_topology_z ? z <= space_z_upper : z < space_z_upper) ) {
+            */
+        if (x >= space_x_lower &&  x < space_x_upper &&
+            y >= space_y_lower &&  y < space_y_upper &&
+            z >= space_z_lower &&  z < space_z_upper ) {
             data_id_buffer[data_buffer_count/6] = id;
             data_buffer[data_buffer_count+0] = x;
             data_buffer[data_buffer_count+1] = y;

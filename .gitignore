@@ -7,3 +7,4 @@ job_scripts/*
 bin
 notebook
 tools/__pycache__
+testdata

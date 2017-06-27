@@ -24,7 +24,10 @@ echo -e "calculating split version..."
 t_first=$(($T/2))
 t_last=$(( $T-$t_first ))
 ./boidsim -s ${setting_file} -T $t_first -o ${data_name_split_first} > /dev/null || exit -1
-./boidsim -s ${setting_file} -T $t_last  -i ${data_name_split_first} -o ${data_name_split} > /dev/null || exit -1
+./boidsim -s ${setting_file} -T $t_last  -i ${data_name_split_first} -o ${data_name_split_last} > /dev/null || exit -1
+echo $data_name_split_first
+echo $data_name_split_last
+echo $data_name_split
 
 cmp ${data_name} ${data_name_split} 0 0> /dev/null
 if [ $? = 0 ]; then
