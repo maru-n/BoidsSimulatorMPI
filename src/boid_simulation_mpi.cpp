@@ -117,6 +117,7 @@ BoidSimulationMultiNode::~BoidSimulationMultiNode()
     delete[] recv_data_buffer;
     delete[] recv_data_id_buffer;
     delete[] data_num_buffer;
+    delete[] data_id_x;
 }
 
 void BoidSimulationMultiNode::init()
@@ -127,6 +128,8 @@ void BoidSimulationMultiNode::init()
     data_buffer_swap = new float[N*6];
     data_id_buffer = new unsigned[N];
     data_id_buffer_swap = new unsigned[N];
+
+    data_id_x = new id_x[N];
 
     //margin_data_buffer = new double[N*6];
     //margin_data_buffer_swap = new double[N*6];
@@ -519,52 +522,43 @@ void BoidSimulationMultiNode::update()
 //int BoidSimulationMultiNode::get(unsigned int id, double* x, double* y, double* z)
 int BoidSimulationMultiNode::get(unsigned int id, float* x, float* y, float* z)
 {
-    for (int i = 0; i < N; ++i) {
-        if(data_id_buffer[i] == id) {
-            *x = data_buffer[6*i+0];
-            *y = data_buffer[6*i+1];
-            *z = data_buffer[6*i+2];
-            return 0;
-        }
-    }
-    std::cerr << "exit(-1) called with id:" << id << std::endl;
-    exit(-1);
-    /*
-    *x = data_buffer[6*id+0];
-    *y = data_buffer[6*id+1];
-    *z = data_buffer[6*id+2];
+    //assert(id == data_id_x[id].id);
+    *x = data_id_x[id].x[0];
+    *y = data_id_x[id].x[1];
+    *z = data_id_x[id].x[2];
     return 0;
-     */
 }
 
 void BoidSimulationMultiNode::gather_data()
 {
     MPI_Gather(&data_buffer_count, 1, MPI_INT, data_num_buffer, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    if (is_master) {
-        MPI_Request *request = new MPI_Request[(mpi_size-1)*2];
-        MPI_Status *status = new MPI_Status[(mpi_size-1)*2];
-        int n = data_num_buffer[0];
-        for (int i = 1; i < mpi_size; ++i) {
-            //MPI_Status status;
-            //MPI_Irecv(&data_buffer[n], data_num_buffer[i], MPI_DOUBLE, i, (i*2), MPI_COMM_WORLD, &request[(i-1)*2]);
-            MPI_Irecv(&data_buffer[n], data_num_buffer[i], MPI_FLOAT, i, (i*2), MPI_COMM_WORLD, &request[(i-1)*2]);
-            MPI_Irecv(&data_id_buffer[n/6], data_num_buffer[i]/6, MPI_UNSIGNED, i, (i*2)+1, MPI_COMM_WORLD, &request[(i-1)*2+1]);
-            n += data_num_buffer[i];
-        }
 
-        MPI_Waitall((mpi_size-1)*2, request, status);
+    for (int i = 0; i < data_buffer_count/6; ++i) {
+        data_id_x[i].id = data_id_buffer[i];
+        data_id_x[i].x[0] = data_buffer[i*6+0];
+        data_id_x[i].x[1] = data_buffer[i*6+1];
+        data_id_x[i].x[2] = data_buffer[i*6+2];
+    }
+
+
+    if (is_master) {
+        MPI_Request *request = new MPI_Request[mpi_size-1];
+        MPI_Status *status = new MPI_Status[mpi_size-1];
+        int n = data_num_buffer[0] / 6;
+        for (int i = 1; i < mpi_size; ++i) {
+            MPI_Irecv(&data_id_x[n], sizeof(id_x) * data_num_buffer[i]/6, MPI_BYTE, i, i, MPI_COMM_WORLD, &request[i-1]);
+            n += data_num_buffer[i] / 6;
+        }
+        MPI_Waitall(mpi_size-1, request, status);
         delete[] request;
         delete[] status;
 
+        std::sort(data_id_x, data_id_x + N, [](const  id_x& x, const id_x& y) { return x.id < y.id;});
     } else {
-        MPI_Request request[2];
-        MPI_Status status[2];
-        //MPI_Isend(data_buffer, data_buffer_count, MPI_DOUBLE, 0, mpi_rank*2, MPI_COMM_WORLD, &request[0]);
-        MPI_Isend(data_buffer, data_buffer_count, MPI_FLOAT, 0, mpi_rank*2, MPI_COMM_WORLD, &request[0]);
-        MPI_Isend(data_id_buffer, data_buffer_count/6, MPI_UNSIGNED, 0, (mpi_rank*2)+1, MPI_COMM_WORLD, &request[1]);
-        //MPI_Send(data_buffer, data_buffer_count, MPI_DOUBLE, 0, mpi_rank*2, MPI_COMM_WORLD);
-        //MPI_Send(data_id_buffer, data_buffer_count/6, MPI_UNSIGNED, 0, (mpi_rank*2)+1, MPI_COMM_WORLD);
-        MPI_Waitall(2, request, status);
+        MPI_Request request;
+        MPI_Status status;
+        MPI_Isend(data_id_x, sizeof(id_x) * data_buffer_count/6, MPI_BYTE, 0, mpi_rank, MPI_COMM_WORLD, &request);
+        MPI_Wait(&request, &status);
     }
 }
 

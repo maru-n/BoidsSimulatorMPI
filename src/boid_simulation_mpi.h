@@ -7,6 +7,11 @@
 
 #include "boid_simulation.h"
 
+typedef struct {
+    unsigned id;
+    float x[3];
+} id_x;
+
 class BoidSimulationMultiNode: public BoidSimulation {
 public:
     BoidSimulationMultiNode(int argc, char **argv);
@@ -24,23 +29,21 @@ protected:
     Boid this_boid, that_boid;
 
     unsigned int data_buffer_count;
-    //double* data_buffer;
-    //double* data_buffer_swap;
     float* data_buffer;
     float* data_buffer_swap;
     unsigned* data_id_buffer;
     unsigned* data_id_buffer_swap;
 
+    //float* data_buffer_all;
+    //unsigned* data_id_buffer_all;
+    id_x* data_id_x;
+
     unsigned int margin_data_buffer_count;
-    //double* margin_data_buffer;
-    //double* margin_data_buffer_swap;
     float* margin_data_buffer;
     float* margin_data_buffer_swap;
     unsigned* margin_data_id_buffer;
     unsigned* margin_data_id_buffer_swap;
 
-    //double *send_data_buffer;
-    //double *recv_data_buffer;
     float *send_data_buffer;
     float *recv_data_buffer;
     unsigned *send_data_id_buffer;
