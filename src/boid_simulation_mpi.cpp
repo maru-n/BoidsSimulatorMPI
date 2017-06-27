@@ -8,6 +8,7 @@
 #include <mpi-ext.h>
 #include <cfloat>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
