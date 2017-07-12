@@ -85,7 +85,7 @@ int main(int argc, char **argv)
                   << "area angle: " << boid_sim->separation.sight_agnle << std::endl
                   << "#Alignment" << std::endl
                   << "force: " << boid_sim->alignment.force_coefficient << std::endl
-                  << "area distance: " <<  boid_sim->alignment.sight_distance << std::endl
+                  << "area distance: " << boid_sim->alignment.sight_distance << std::endl
                   << "area angle: " << boid_sim->alignment.sight_agnle << std::endl
                   << "#Cohesion" << std::endl
                   << "force: " << boid_sim->cohesion.force_coefficient << std::endl
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
                   << "#Velocity" << std::endl
                   << "min: " << boid_sim->velocity.min << std::endl
                   << "max: " << boid_sim->velocity.max << std::endl;
-                  //<< "#OpenMP: " << (boid_sim->is_openmp_enabled() ? ("enabled (max threads:" + std::to_string(boid_sim->get_max_threads()) + ")") : "disabled")
+        //<< "#OpenMP: " << (boid_sim->is_openmp_enabled() ? ("enabled (max threads:" + std::to_string(boid_sim->get_max_threads()) + ")") : "disabled")
         if (boid_sim->is_openmp_enabled()) {
             std::cout << "#OpenMP: enabled (max threads:" << boid_sim->get_max_threads() << ")" << std::endl;
         } else {
@@ -126,6 +126,19 @@ int main(int argc, char **argv)
         fout.write((char *) &header, sizeof(header));
     }
 
+    if (args.is_parallel_output) {
+        if (is_master()) {
+            fout.close();
+        }
+        string outfname = args.output_filename + (boost::format("_%04d") % get_node_id()).str();
+        fout.open(outfname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!fout) {
+            std::cerr << "Couldn't open output file on node #" << get_node_id() << std::endl;
+            exit(-1);
+        }
+    }
+
+
     // simulation
     if(is_master()) {
         std::cout << "simulation start." << std::endl;
@@ -138,37 +151,37 @@ int main(int argc, char **argv)
         if (args.is_parallel_output) {
             //TODO:save data
         } else {
-        if (is_master()) {
+            if (is_master()) {
 #ifdef _MPI
                 dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->gather_data();
 #endif
-            for (int i = 0; i < boid_sim->N; i++) {
-                boid_sim->get(i, &x, &y, &z);
-                x = fix_byte_order(x);
-                y = fix_byte_order(y);
-                z = fix_byte_order(z);
-                fout.write((char *) &x, sizeof(x));
-                fout.write((char *) &y, sizeof(y));
-                fout.write((char *) &z, sizeof(z));
+                for (int i = 0; i < boid_sim->N; i++) {
+                    boid_sim->get(i, &x, &y, &z);
+                    x = fix_byte_order(x);
+                    y = fix_byte_order(y);
+                    z = fix_byte_order(z);
+                    fout.write((char *) &x, sizeof(x));
+                    fout.write((char *) &y, sizeof(y));
+                    fout.write((char *) &z, sizeof(z));
                     if (args.is_force_data_output) {
-                    boid_sim->get_force(i, &coh_x, &coh_y, &coh_z, &sep_x, &sep_y, &sep_z, &ali_x, &ali_y, &ali_z);
-                    fout.write((char *) &coh_x, sizeof(coh_x));
-                    fout.write((char *) &coh_y, sizeof(coh_y));
-                    fout.write((char *) &coh_z, sizeof(coh_z));
-                    fout.write((char *) &sep_x, sizeof(sep_x));
-                    fout.write((char *) &sep_y, sizeof(sep_y));
-                    fout.write((char *) &sep_z, sizeof(sep_z));
-                    fout.write((char *) &ali_x, sizeof(ali_x));
-                    fout.write((char *) &ali_y, sizeof(ali_y));
-                    fout.write((char *) &ali_z, sizeof(ali_z));
+                        boid_sim->get_force(i, &coh_x, &coh_y, &coh_z, &sep_x, &sep_y, &sep_z, &ali_x, &ali_y, &ali_z);
+                        fout.write((char *) &coh_x, sizeof(coh_x));
+                        fout.write((char *) &coh_y, sizeof(coh_y));
+                        fout.write((char *) &coh_z, sizeof(coh_z));
+                        fout.write((char *) &sep_x, sizeof(sep_x));
+                        fout.write((char *) &sep_y, sizeof(sep_y));
+                        fout.write((char *) &sep_z, sizeof(sep_z));
+                        fout.write((char *) &ali_x, sizeof(ali_x));
+                        fout.write((char *) &ali_y, sizeof(ali_y));
+                        fout.write((char *) &ali_z, sizeof(ali_z));
+                    }
                 }
             }
-            }
         }
-        
-            if(is_master()) {
-                std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
-            }
+
+        if(is_master()) {
+            std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
+        }
         boid_sim->update();
     }
     if (is_master()) {
