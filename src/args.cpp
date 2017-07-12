@@ -24,7 +24,7 @@ Args::Args(int argc, const char **argv)
             ("setting,s", value<string>(&setting_filename), "simulation setting file with .ini format.")
             ("output,o", value<string>(&output_filename), "output file.")
             ("parallel-output,p", "output data on several nodes on MPI.")
-            ("force-data-output,p", "force vector output on data. (this option is experimental!!!)")
+            ("force-data-output", "force vector output on data. (this option is experimental!!!)")
             ;
     options_description sim_options("simulation parameters (have priority over setting file.)");
     sim_options.add_options()
