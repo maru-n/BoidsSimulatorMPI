@@ -23,6 +23,8 @@ Args::Args(int argc, const char **argv)
             ("help,h", "help")
             ("setting,s", value<string>(&setting_filename), "simulation setting file with .ini format.")
             ("output,o", value<string>(&output_filename), "output file.")
+            ("parallel-output,p", "output data on several nodes on MPI.")
+            ("force-data-output,p", "force vector output on data. (this option is experimental!!!)")
             ;
     options_description sim_options("simulation parameters (have priority over setting file.)");
     sim_options.add_options()
@@ -50,6 +52,21 @@ Args::Args(int argc, const char **argv)
 
     // --output -o
     if(values.count("output")) {
+    }
+
+    // --parallel-output -p
+    is_parallel_output = false;
+#ifdef _MPI
+    if(values.count("parallel-output")) {
+        is_parallel_output = true;
+    }
+#endif
+
+    // --force-data-output
+    // TODO: this option is experimental!!!
+    is_force_data_output = false;
+    if(values.count("force-data-output")) {
+        is_force_data_output = true;
     }
 
     // --setting, -s

@@ -18,13 +18,12 @@ public:
     ~BoidSimulationMultiNode();
     void init();
     void update();
-    //int get(unsigned int id, double* x, double* y, double* z);
-    int get(unsigned int id, float* x, float* y, float* z);
-    //void set_master(bool master);
-    bool is_master_node(){return is_master;};
-
-protected:
     void gather_data();
+    int get(unsigned int id, float* x, float* y, float* z);
+    bool is_master_node(){return is_master;};
+    int get_node_id(){return mpi_rank;};
+protected:
+
 
     Boid this_boid, that_boid;
 

@@ -233,7 +233,7 @@ void BoidSimulationMultiNode::init()
         }
     }
 
-    this->gather_data();
+    //this->gather_data();
 }
 
 
@@ -517,7 +517,7 @@ void BoidSimulationMultiNode::update()
 
     }
 
-    this->gather_data();
+    //this->gather_data();
 }
 
 //int BoidSimulationMultiNode::get(unsigned int id, double* x, double* y, double* z)

@@ -10,6 +10,7 @@
 #include "args.h"
 #include "boid_simulation.h"
 #include "boid_simulation_mpi.h"
+#include <boost/format.hpp>
 
 using std::string;
 
@@ -46,6 +47,14 @@ bool is_master() {
 #endif
 }
 
+int get_node_id(){
+#ifdef _MPI
+    return dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_node_id();
+#else
+    return 0;
+#endif
+}
+
 int main(int argc, char **argv)
 {
     bool FORCE_OUTPUT = false;
@@ -66,7 +75,10 @@ int main(int argc, char **argv)
     if(is_master()) {
 
         std::cout << "N: " << boid_sim->N << std::endl
-                  << "field size: " << boid_sim->field_size_X << "," << boid_sim->field_size_Y << "," << boid_sim->field_size_Z << std::endl
+                  << "field size: "
+                  << boid_sim->field_size_X << ","
+                  << boid_sim->field_size_Y << ","
+                  << boid_sim->field_size_Z << std::endl
                   << "#Separation" << std::endl
                   << "force: " << boid_sim->separation.force_coefficient << std::endl
                   << "area distance: " << boid_sim->separation.sight_distance << std::endl
@@ -88,9 +100,11 @@ int main(int argc, char **argv)
         } else {
             std::cout << "#OpenMP: disabled" << std::endl;
         }
+    }
 
 
-
+    // setup output file
+    if(is_master()) {
         check_endianness();
         fout.open(args.output_filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
         if (!fout) {
@@ -121,24 +135,22 @@ int main(int argc, char **argv)
     float x, y, z;
     float coh_x, coh_y, coh_z, sep_x, sep_y, sep_z, ali_x, ali_y, ali_z;
     for (unsigned int t=0; t<args.time_step; t++) {
+        if (args.is_parallel_output) {
+            //TODO:save data
+        } else {
         if (is_master()) {
+#ifdef _MPI
+                dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->gather_data();
+#endif
             for (int i = 0; i < boid_sim->N; i++) {
                 boid_sim->get(i, &x, &y, &z);
-                /*
-                fx = fix_byte_order(float(x));
-                fy = fix_byte_order(float(y));
-                fz = fix_byte_order(float(z));
-                fout.write((char *) &fx, sizeof(fx));
-                fout.write((char *) &fy, sizeof(fy));
-                fout.write((char *) &fz, sizeof(fz));
-                 */
                 x = fix_byte_order(x);
                 y = fix_byte_order(y);
                 z = fix_byte_order(z);
                 fout.write((char *) &x, sizeof(x));
                 fout.write((char *) &y, sizeof(y));
                 fout.write((char *) &z, sizeof(z));
-                if (FORCE_OUTPUT) {
+                    if (args.is_force_data_output) {
                     boid_sim->get_force(i, &coh_x, &coh_y, &coh_z, &sep_x, &sep_y, &sep_z, &ali_x, &ali_y, &ali_z);
                     fout.write((char *) &coh_x, sizeof(coh_x));
                     fout.write((char *) &coh_y, sizeof(coh_y));
@@ -151,10 +163,12 @@ int main(int argc, char **argv)
                     fout.write((char *) &ali_z, sizeof(ali_z));
                 }
             }
+            }
+        }
+        
             if(is_master()) {
                 std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
             }
-        }
         boid_sim->update();
     }
     if (is_master()) {

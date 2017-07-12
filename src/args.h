@@ -13,6 +13,8 @@ public:
     Args(int argc, const char **argv);
     std::string setting_filename;
     std::string output_filename;
+    bool is_parallel_output;
+    bool is_force_data_output;
 
     unsigned int time_step;
 
