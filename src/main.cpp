@@ -55,9 +55,26 @@ int get_node_id(){
 #endif
 }
 
+void write_header(std::ofstream &fout, Args& args) {
+    data_file_header_v02 header;
+    header.header_length = fix_byte_order(sizeof(header));
+    header.N     = fix_byte_order(args.population);
+    header.step  = fix_byte_order(args.time_step);
+    header.t_0   = fix_byte_order(boid_sim->time_step);
+    header.fps   = fix_byte_order(FPS);
+    header.x_min = fix_byte_order(0.0f);
+    header.x_max = fix_byte_order((float)boid_sim->field_size_X);
+    header.y_min = fix_byte_order(0.0f);
+    header.y_max = fix_byte_order((float)boid_sim->field_size_Y);
+    header.z_min = fix_byte_order(0.0f);
+    header.z_max = fix_byte_order((float) boid_sim->field_size_Z);
+    fout.write((char *) &header, sizeof(header));
+}
+
+
 int main(int argc, char **argv)
 {
-    bool FORCE_OUTPUT = false;
+    check_endianness();
 
 #ifdef _MPI
     boid_sim = new BoidSimulationMultiNode(argc, argv);
@@ -104,38 +121,31 @@ int main(int argc, char **argv)
 
 
     // setup output file
-    if(is_master()) {
-        check_endianness();
-        fout.open(args.output_filename.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-        if (!fout) {
-            std::cerr << "Couldn't open output file." << std::endl;
-            exit(-1);
-        }
-        data_file_header_v02 header;
-        header.header_length = fix_byte_order(sizeof(header));
-        header.N     = fix_byte_order(args.population);
-        header.step  = fix_byte_order(args.time_step);
-        header.t_0   = fix_byte_order(boid_sim->time_step);
-        header.fps   = fix_byte_order(FPS);
-        header.x_min = fix_byte_order(0.0f);
-        header.x_max = fix_byte_order((float)boid_sim->field_size_X);
-        header.y_min = fix_byte_order(0.0f);
-        header.y_max = fix_byte_order((float)boid_sim->field_size_Y);
-        header.z_min = fix_byte_order(0.0f);
-        header.z_max = fix_byte_order((float) boid_sim->field_size_Z);
-        fout.write((char *) &header, sizeof(header));
-    }
-
     if (args.is_parallel_output) {
         if (is_master()) {
-            fout.close();
+            string fname = args.output_filename + "_header";
+            std::ofstream header_file(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+            if (!header_file) {
+                std::cerr << "Couldn't open: " << fname << std::endl;
+                exit(-1);
+            }
+            write_header(header_file, args);
+            header_file.close();
         }
-        string outfname = args.output_filename + (boost::format("_%04d") % get_node_id()).str();
-        fout.open(outfname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+        string fname = args.output_filename + (boost::format("_%04d") % get_node_id()).str();
+        fout.open(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
         if (!fout) {
-            std::cerr << "Couldn't open output file on node #" << get_node_id() << std::endl;
+            std::cerr << "Couldn't open: " << fname << std::endl;
             exit(-1);
         }
+    } else {
+        string fname = args.output_filename;
+        fout.open(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+        if (!fout) {
+            std::cerr << "Couldn't open: " << fname << std::endl;
+            exit(-1);
+        }
+        write_header(fout, args);
     }
 
 
@@ -149,7 +159,26 @@ int main(int argc, char **argv)
     float coh_x, coh_y, coh_z, sep_x, sep_y, sep_z, ali_x, ali_y, ali_z;
     for (unsigned int t=0; t<args.time_step; t++) {
         if (args.is_parallel_output) {
-            //TODO:save data
+#ifdef _MPI
+            unsigned int n = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_num();
+            n = fix_byte_order(n);
+            fout.write((char *) &n, sizeof(n));
+            float* d = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_buffer_ptr();
+            for (int i = 0; i < n; ++i) {
+                x = d[i*6+0];
+                y = d[i*6+1];
+                z = d[i*6+2];
+                x = fix_byte_order(x);
+                y = fix_byte_order(y);
+                z = fix_byte_order(z);
+                fout.write((char *) &x, sizeof(x));
+                fout.write((char *) &y, sizeof(y));
+                fout.write((char *) &z, sizeof(z));
+            }
+#else
+            std::cout << "Parallel output work on only MPI." << std::endl;
+            return -1;
+#endif
         } else {
             if (is_master()) {
 #ifdef _MPI
