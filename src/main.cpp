@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     // setup output file
     if (args.is_parallel_output) {
         if (is_master()) {
-            string fname = args.output_filename + "_header";
+            string fname = args.output_filename + "__header";
             std::ofstream header_file(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
             if (!header_file) {
                 std::cerr << "Couldn't open: " << fname << std::endl;

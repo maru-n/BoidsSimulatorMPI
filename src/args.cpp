@@ -74,10 +74,10 @@ Args::Args(int argc, const char **argv)
     if(values.count("setting")) {
         ptree pt;
         read_ini(setting_filename, pt);
-        if (boost::optional<unsigned int> o = pt.get_optional<unsigned int>("Global.TIME_STEP")) {
+        if (boost::optional<unsigned> o = pt.get_optional<unsigned>("Global.TIME_STEP")) {
             time_step = o.get();
         }
-        if (boost::optional<unsigned int> o = pt.get_optional<unsigned int>("Global.POPULATION")) {
+        if (boost::optional<unsigned> o = pt.get_optional<unsigned>("Global.POPULATION")) {
             population = o.get();
         }
         if (boost::optional<double> o = pt.get_optional<double>("Global.FIELD_SIZE")) {
@@ -131,10 +131,10 @@ Args::Args(int argc, const char **argv)
     }
 
     if (values.count("population")) {
-        population = values["population"].as<unsigned int>();
+        population = values["population"].as<unsigned>();
     }
 
     if (values.count("time-step")) {
-        time_step = values["time-step"].as<unsigned int>();
+        time_step = values["time-step"].as<unsigned>();
     }
 }

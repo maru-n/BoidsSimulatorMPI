@@ -6,10 +6,14 @@ export build_dir=build
 export setting_file="../../settings/test.ini"
 export CMAKE_OPTIONS="-D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++"
 
+export TOOLS_PATH="../../tools/"
+
 export data_name=`mktemp`
-export data_name_split=`mktemp`
+
+export tmp=`mktemp`
 export data_name_split_first=`mktemp`
 export data_name_split_last=`mktemp`
+export data_name_split_merge=`mktemp`
 
 echo -e "build..."
 if [ ! -e ${build_dir} ]; then mkdir ${build_dir} ; fi
@@ -20,16 +24,19 @@ make boidsim || exit -1
 echo -e "calculating normal version..."
 ./boidsim -s ${setting_file} -T $T -o ${data_name} > /dev/null || exit -1
 
-echo -e "calculating split version..."
+
 t_first=$(($T/2))
 t_last=$(( $T-$t_first ))
+echo -e "calculating split version...(1/2)"
 ./boidsim -s ${setting_file} -T $t_first -o ${data_name_split_first} > /dev/null || exit -1
-./boidsim -s ${setting_file} -T $t_last  -i ${data_name_split_first} -o ${data_name_split_last} > /dev/null || exit -1
-echo $data_name_split_first
-echo $data_name_split_last
-echo $data_name_split
+python ${TOOLS_PATH}slice_data.py ${data_name_split_first} ${tmp} $((t_first-1)) 1
+echo -e "calculating split version...(2/2)"
+#./boidsim -s ${setting_file} -T $t_last  -o ${data_name_split_last} -i continue --continue-file ${tmp} > /dev/null || exit -1
+./boidsim -s ${setting_file} -T $t_last  -o ${data_name_split_last} -i continue --continue-file ${tmp}
+echo -e "merge split data..."
+python ${TOOLS_PATH}merge_data.py ${data_name_split_first} ${data_name_split_last} ${data_name_split_merge}
 
-cmp ${data_name} ${data_name_split} 0 0> /dev/null
+cmp ${data_name} ${data_name_split_merge} 0 0> /dev/null
 if [ $? = 0 ]; then
     echo -e "\033[0;32mTest Succeeded\033[0;39m"
 else
