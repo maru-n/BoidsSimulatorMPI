@@ -155,14 +155,21 @@ int main(int argc, char **argv)
     }
     //double x, y, z;
     //float fx, fy, fz;
+    unsigned id, n, nn;
     float x, y, z;
     float coh_x, coh_y, coh_z, sep_x, sep_y, sep_z, ali_x, ali_y, ali_z;
     for (unsigned int t=0; t<args.time_step; t++) {
         if (args.is_parallel_output) {
 #ifdef _MPI
-            unsigned int n = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_num();
-            n = fix_byte_order(n);
-            fout.write((char *) &n, sizeof(n));
+            n = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_num();
+            nn = fix_byte_order(n);
+            fout.write((char *) &nn, sizeof(nn));
+            unsigned* idb = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_id_buffer_ptr();
+            for (int i = 0; i < n; ++i) {
+                id = idb[i];
+                id = fix_byte_order(id);
+                fout.write((char *) &id, sizeof(id));
+            }
             float* d = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_buffer_ptr();
             for (int i = 0; i < n; ++i) {
                 x = d[i*6+0];

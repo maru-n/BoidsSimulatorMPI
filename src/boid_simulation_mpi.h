@@ -24,6 +24,7 @@ public:
     int get_node_id(){return mpi_rank;};
     unsigned int get_data_num(){return data_buffer_count/6;};
     float* get_data_buffer_ptr(){return data_buffer;};
+    unsigned * get_id_buffer_ptr(){return data_id_buffer;};
 protected:
 
 
