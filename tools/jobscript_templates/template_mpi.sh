@@ -5,7 +5,7 @@
 #PJM --stg-transfiles all
 #PJM --stgin "rank=* ./boidsim_mpi %r:./"
 #PJM --stgin "rank=* ../settings/*.ini %r:./"
-#PJM --stgout "rank=0 ./*.ptcl /data/hp160264/k03378{{data_safix}}/"
+#PJM --stgout "rank=* ./*.ptcl* /data/hp160264/k03378{{data_safix}}/"
 #PJM --mpi "rank-map-bynode=XYZ"
 #PJM --mpi "use-rankdir"
 #PJM -s

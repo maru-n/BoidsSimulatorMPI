@@ -8,7 +8,9 @@ fi
 target_dir=$1
 
 if [[ ${target_dir} == '' ]]; then
-    target_dir='./'
+    cd `dirname $0`
+    cd ../
+    target_dir='./data'
 fi
 
 rsync --exclude clean --exclude old --exclude masumori --exclude trash --exclude backup* --copy-links -ahv -P -e ssh klogin:~/data/* ${target_dir}
