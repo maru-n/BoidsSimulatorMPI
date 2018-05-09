@@ -1,13 +1,13 @@
 .idea
 build
-data
-job_scripts/*
-!example.sh
-!example_mpi.sh
-bin
-notebook
+#data
+#job_scripts/*
+#!example.sh
+#!example_mpi.sh
+#bin
+#notebook
 tools/__pycache__
-testdata
+#testdata
 
 
 # Prerequisites
