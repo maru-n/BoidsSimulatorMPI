@@ -1,6 +1,6 @@
-# MassiveSwarm
+# BoidsSimulatorMPI
 
-calculation of Boid model on single computer or multi node cluster (using MPI).
+Boids model simulator on single computer or multi node cluster (using MPI).
 
 ## Build
 
