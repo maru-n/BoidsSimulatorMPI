@@ -4,6 +4,14 @@ import sys
 import warnings
 from swarm_util import *
 
+USAGE = """\
+USAGE: check_datafile.py file1 file2 ...\
+"""
+
+if len(sys.argv) < 2:
+    print(USAGE)
+    sys.exit()
+
 fnames = sys.argv[1:]
 
 for fn in fnames:

@@ -132,7 +132,7 @@ int main(int argc, char **argv)
             write_header(header_file, args);
             header_file.close();
         }
-        string fname = args.output_filename + (boost::format("_%04d") % get_node_id()).str();
+        string fname = args.output_filename + (boost::format("__c_%06d") % get_node_id()).str();
         fout.open(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
         if (!fout) {
             std::cerr << "Couldn't open: " << fname << std::endl;

@@ -29,12 +29,13 @@ t_first=$(($T/2))
 t_last=$(( $T-$t_first ))
 echo -e "calculating split version...(1/2)"
 ./boidsim -s ${setting_file} -T $t_first -o ${data_name_split_first} > /dev/null || exit -1
-python ${TOOLS_PATH}slice_data.py ${data_name_split_first} ${tmp} $((t_first-1)) 1
+python ${TOOLS_PATH}split_datafile.py ${data_name_split_first} ${tmp} $((t_first-1)) 1
 echo -e "calculating split version...(2/2)"
 #./boidsim -s ${setting_file} -T $t_last  -o ${data_name_split_last} -i continue --continue-file ${tmp} > /dev/null || exit -1
-./boidsim -s ${setting_file} -T $t_last  -o ${data_name_split_last} -i continue --continue-file ${tmp}
+./boidsim -s ${setting_file} -T $t_last  -o ${data_name_split_last} -i continue --continue-file ${tmp} --not-output-init-state
 echo -e "merge split data..."
-python ${TOOLS_PATH}merge_data.py ${data_name_split_first} ${data_name_split_last} ${data_name_split_merge}
+#python ${TOOLS_PATH}merge_data.py ${data_name_split_first} ${data_name_split_last} ${data_name_split_merge}
+
 
 cmp ${data_name} ${data_name_split_merge} 0 0> /dev/null
 if [ $? = 0 ]; then

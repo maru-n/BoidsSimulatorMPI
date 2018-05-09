@@ -15,6 +15,7 @@ public:
     std::string output_filename;
     bool is_parallel_output;
     bool is_force_data_output;
+    bool is_output_init_state;
 
     unsigned int time_step;
 

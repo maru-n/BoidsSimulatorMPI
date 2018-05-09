@@ -45,8 +45,15 @@ def fix_data(filename):
         f.write(struct.pack(HEADER_FORMAT, *headder))
         f.truncate(correct_filesize)
 
+USAGE = """\
+clean extra gabage data on the end of file.
+USAGE: fix_datafile.py filename\
+"""
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print(USAGE)
+        exit()
     fn = sys.argv[1]
     if ask_user(fn):
         fix_data(fn)

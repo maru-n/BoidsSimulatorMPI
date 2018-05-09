@@ -4,6 +4,10 @@ import sys
 from swarm_util import *
 import struct
 
+USAGE = """\
+USAGE: split_datafile.py input_file output_file start steps \
+"""
+
 def slice_data(in_fname, out_fname, start, steps):
     sdm = SwarmDataManager(in_fname)
     N = sdm.N
@@ -27,6 +31,9 @@ def slice_data(in_fname, out_fname, start, steps):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) < 5:
+        print(USAGE)
+        sys.exit()
     infile = sys.argv[1]
     outfile = sys.argv[2]
     start = int(sys.argv[3])

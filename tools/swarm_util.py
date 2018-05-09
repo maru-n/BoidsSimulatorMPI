@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import glob
 import re
+import warnings
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 
 #DATA_DIM = 3
@@ -89,6 +90,26 @@ class SwarmDataManager(object):
     def close(self):
         self.file.close()
 
+def load_metadata(filename):
+    sdm = SwarmDataManager(filename)
+    metadata = dict(
+        file_name = sdm.file_name,
+        N = sdm.N,
+        step_max = sdm.steps,
+        x_min = sdm.x_min,
+        x_max = sdm.x_max,
+        y_min = sdm.y_min,
+        y_max = sdm.y_max,
+        z_min = sdm.z_min,
+        z_max = sdm.z_max
+    )
+    return metadata
+
+
+def load_data(filename, time, vel_calc_step=1):
+    sdm = SwarmDataManager(filename)
+    return calc_vel(sdm, time, step=vel_calc_step)
+
 def calc_vel(sdm, time, step=1):
     sdm.set_timestep(time)
     x0 = sdm.read_pos()
@@ -139,7 +160,6 @@ def calc_vel_legacy(sdm, time, step=1):
 
     return x0, v
 
-
 def plt_xv(x, v, dim=(0,1)):
     plt.quiver(x[:,dim[0]], x[:,dim[1]], v[:,dim[0]], v[:,dim[1]], scale=0.25)
 
@@ -167,17 +187,28 @@ def plt_xvc(x, v, c=None, dim=(0,1), type='all', only_class=-1, cmap=plt.cm.pris
             plt.quiver(x0[:,dim[0]], x0[:,dim[1]], v0[:,dim[0]], v0[:,dim[1]], scale=0.25, color='red')
             plt.quiver(x1[:,dim[0]], x1[:,dim[1]], v1[:,dim[0]], v1[:,dim[1]], scale=0.25, color='gray', alpha=0.2)
 
-def plt_3d_xc(x, c=None, cmap=plt.cm.prism, type='all', s=1):
-    ax = Axes3D(plt.gcf())
-    if type=='all':
-        ax.scatter3D(x[:,0], x[:, 1], x[:, 2], ',', c=c, cmap=cmap, s=s)
-    elif type=='class':
+def plt_3d_xc(x, c=None, cmap=plt.cm.prism, plot_class='all', point_size=1, axis=None):
+    if axis is None:
+        ax = Axes3D(plt.gcf())
+    else:
+        ax = axis
+    if plot_class=='all':
+        ax.scatter3D(x[:,0], x[:, 1], x[:, 2], ',', c=c, cmap=cmap, s=point_size)
+    elif plot_class=='class':
+        print("test")
         x1 = x[c==-1]
         c1 = c[c==-1]
-        #ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.2)
+        ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.01)
         x0 = x[c!=-1]
         c0 = c[c!=-1]
-        ax.scatter3D(x0[:,0], x0[:, 1], x0[:, 2], ',', c=c0, cmap=cmap, s=s)
+        ax.scatter3D(x0[:,0], x0[:, 1], x0[:, 2], ',', c=c0, cmap=cmap, s=point_size)
+    elif type(plot_class) is int:
+        x1 = x[c!=plot_class]
+        c1 = c[c!=plot_class]
+        ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.01)
+        x0 = x[c==plot_class]
+        c0 = c[c==plot_class]
+        ax.scatter3D(x0[:,0], x0[:, 1], x0[:, 2], ',', c=c0, cmap=cmap, s=point_size)
 
 
 def load_param_datas_dataframe(data_dir, PARAM_SET_LIST = ['mototake', 'one_body'], N_LIST = [2**n for n in range(10,20)]):

@@ -6,7 +6,7 @@ export T=300
 export build_dir=build
 #export setting_file="../../settings/test.ini"
 export setting_file="../../settings/example.ini"
-export CMAKE_OPTIONS="-D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++"
+#export CMAKE_OPTIONS="-D CMAKE_C_COMPILER=clang -D CMAKE_CXX_COMPILER=clang++"
 
 export data_name=`mktemp`
 export data_name_mpi=`mktemp`
