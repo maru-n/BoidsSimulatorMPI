@@ -42,3 +42,5 @@ tools/__pycache__
 *.exe
 *.out
 *.app
+cmake-build-debug/
+.DS_Store
