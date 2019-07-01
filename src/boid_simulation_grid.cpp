@@ -18,6 +18,8 @@
 #include <omp.h>
 #endif
 
+using namespace std;
+
 BoidSimulation::BoidSimulation() {}
 
 BoidSimulation::~BoidSimulation()
@@ -60,6 +62,20 @@ void BoidSimulation::setup(unsigned int number_of_agents,
     this->initialization_type = initialization;
     this->rand_seed = rand_seed;
     this->time_step = 0;
+
+    this->INTERACTION_RANGE = (float) max(max(this->cohesion.sight_distance, this->alignment.sight_distance), this->separation.sight_distance);
+    this->GRID_NUM = int(field_size / (INTERACTION_RANGE*2));
+    this->grid.resize(GRID_NUM*GRID_NUM*GRID_NUM);
+    this->GRID_SIZE = float(this->field_size / this->GRID_NUM);
+
+
+    if (INTERACTION_RANGE * 2 >= this->GRID_SIZE) {
+        std::cerr << "Invalid GRID_NUM!!!" << std::endl;
+        exit(-1);
+    }
+
+    cout << "# Grid List Optimization enabled" << endl
+         << "  grid num:"<< this->GRID_NUM << endl;
 }
 
 void BoidSimulation::init()
@@ -82,6 +98,11 @@ void BoidSimulation::init()
             boids[i].velocity.y = double(v * sin(th1) * sin(th2));
             boids[i].velocity.z = double(v * cos(th1));
             boids[i].id = i;
+            unsigned int grid_x = int(boids[i].position.x / field_size_X);
+            unsigned int grid_y = int(boids[i].position.x / field_size_X);
+            unsigned int grid_z = int(boids[i].position.x / field_size_X);
+
+            update_list_grid(boids[i]);
         }
     } else if (initialization_type == "random_uniform") {
         for (int i = 0; i < N; i++) {
@@ -95,48 +116,10 @@ void BoidSimulation::init()
             boids[i].velocity.y = double(v * sin(th1) * sin(th2));
             boids[i].velocity.z = double(v * cos(th1));
             boids[i].id = i;
+
+            update_list_grid(boids[i]);
         }
     } else {
-        // TODO:
-        /*
-        std::ifstream init_data_file(initialization_type,  std::ios::binary);
-        if (!init_data_file) {
-            std::cerr << "Invalid initial placement type or file name: " << initialization_type << std::endl;
-            exit(-1);
-        }
-        data_file_header_v02 init_data_header;
-        init_data_file.read((char*)&init_data_header, sizeof(init_data_header));
-        if (init_data_header.N != this->N) {
-            std::cerr << "Setup population is " << this->N << ". but in initial placement file population is " << init_data_header.N << std::endl;
-            exit(-1);
-        }
-
-        init_data_file.seekg(4 * 3 * this->N * 2, std::ios::end);
-        for (int i = 0; i < this->N; ++i) {
-            init_data_file.read((char*)&boids[i].position.x, sizeof(boids[i].position.x));
-            init_data_file.read((char*)&boids[i].position.y, sizeof(boids[i].position.y));
-            init_data_file.read((char*)&boids[i].position.z, sizeof(boids[i].position.z));
-        }
-        for (int i = 0; i < this->N; ++i) {
-            float tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.x = tmp - boids[i].position.x;
-            boids[i].position.x = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.y = tmp - boids[i].position.y;
-            boids[i].position.y = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.z = tmp - boids[i].position.z;
-            boids[i].position.z = tmp;
-            std::cerr << i << ":" << boids[i].position.x << "," << boids[i].position.y << "," << boids[i].position.z << std::endl;
-            boids[i].id = i;
-        }
-
-        this->time_step = init_data_header.t_0 + init_data_header.step - 1;
-        //this->time_step = 0;
-
-        init_data_file.close();
-         */
     }
 }
 
@@ -158,9 +141,24 @@ void BoidSimulation::update()
         int neivers_num_coh = 0;
         int neivers_num_sep = 0;
         int neivers_num_ali = 0;
-        //if(i==13) {std::cerr << "#13 see ";}
-        for(int j=0; j<N; j++){
-            Vector3D boids_j_pos_tmp = boids[j].position;
+
+        Boid boid_this = boids[i];
+
+
+
+        std::list<Boid*> target_boids_list = this->grid[boids[i].grid_index[0]];
+
+        std::list<Boid*>::iterator itr = target_boids_list.begin();
+        //for (int j = 0; j < target_boids_list.size(); ++j) {
+        //Boid* boid_that = target_boids_list.inde
+        for(; itr != target_boids_list.end(); ++itr) {
+            Boid* boid_that = *itr;
+
+        //for(auto boid_that = target_boids_list.begin(); boid_that != target_boids_list.end(); ++boid_that) {
+            //Vector3D boids_j_pos_tmp =  (*boid_that)->position;
+            //Vector3D boids_j_pos_tmp =  boid_that->position;
+            Vector3D boids_j_pos_tmp =  (*itr)->position;
+
 
             if ((boids_j_pos_tmp.x - boids[i].position.x) > field_size_X/2) {
                 boids_j_pos_tmp.x -= field_size_X;
@@ -179,7 +177,8 @@ void BoidSimulation::update()
             }
 
             Boid target_boid(boids_j_pos_tmp);
-            if( i != j ){
+            if( boids[i].id != boid_that->id ){
+            //if( i != j ){
                 // Cohesion
                 if (boids[i].isInsideArea(target_boid, cohesion.sight_distance, cohesion.sight_agnle)){
                     //if(i==13) {std::cerr << j << ", ";}
@@ -196,10 +195,13 @@ void BoidSimulation::update()
                 if (boids[i].isInsideArea(target_boid, alignment.sight_distance, alignment.sight_agnle)) {
                     //if(i==13) {std::cerr << j << ", ";}
                     neivers_num_ali ++;
-                    dv_ali[i] += boids[j].velocity;
+                    //dv_ali[i] += boids[j].velocity;
+                    //dv_ali[i] += target_boids_list[j].velocity;
+                    dv_ali[i] += boid_that->velocity;
                 }
             }
         }
+
         //if(i==13) {std::cerr << std::endl;}
         if (neivers_num_coh != 0) {
             dv_coh[i] = dv_coh[i] / neivers_num_coh - boids[i].position;
@@ -212,6 +214,8 @@ void BoidSimulation::update()
         }
         dv[i] = cohesion.force_coefficient*dv_coh[i] + separation.force_coefficient*dv_sep[i] + alignment.force_coefficient*dv_ali[i];
     }
+
+    clear_list_grid();
 
 #ifdef _OPENMP
 #pragma omp for
@@ -246,6 +250,8 @@ void BoidSimulation::update()
         } else if(boids[i].position.z > field_size_Z) {
             boids[i].position.z = boids[i].position.z - field_size_Z;
         }
+
+        update_list_grid(boids[i]);
     }
 }
 
@@ -313,7 +319,6 @@ std::ostream& operator<<(std::ostream& stream, const BoidSimulation& boidsim)
            << "#Velocity" << std::endl
            << "min: " << boidsim.velocity.min << std::endl
            << "max: " << boidsim.velocity.max << std::endl
-           << "#Grid List Optimization: " << boidsim.GRID_NUM << std::endl
            << "#OpenMP: ";
     if (boidsim.is_openmp_enabled()) {
         stream << "Enabled (max threads = " << boidsim.get_max_threads() << ")" << std::endl;
@@ -322,3 +327,71 @@ std::ostream& operator<<(std::ostream& stream, const BoidSimulation& boidsim)
     }
     return stream;
 }
+
+void BoidSimulation::clear_list_grid() {
+    for (int i = 0; i < grid.size(); ++i) {
+        grid[i].clear();
+    }
+}
+
+void BoidSimulation::update_list_grid(Boid &boid) {
+    /*
+    for (int i = 0; i < 8; ++i) {
+        if (boid.grid_index[i] < 0) {
+            continue;
+        }
+        this->grid[boid.grid_index[i]].remove(&boid);
+    }*/
+
+    // update boid grid info
+    // boid.grid_index (int[8])
+    int grid_index[3][2];
+    grid_index[0][0] = int(boid.position.x / this->GRID_SIZE);
+    grid_index[1][0] = int(boid.position.y / this->GRID_SIZE);
+    grid_index[2][0] = int(boid.position.z / this->GRID_SIZE);
+
+    float pos_in_grid[3];
+    pos_in_grid[0] = boid.position.x - grid_index[0][0] * this->GRID_SIZE;
+    pos_in_grid[1] = boid.position.y - grid_index[1][0] * this->GRID_SIZE;
+    pos_in_grid[2] = boid.position.z - grid_index[2][0] * this->GRID_SIZE;
+
+    for (int i = 0; i <3; ++i) {
+        if (pos_in_grid[i] < INTERACTION_RANGE) {
+            grid_index[i][1] = (grid_index[i][0] - 1 + GRID_NUM) % GRID_NUM;
+        } else if (pos_in_grid[i] >= this->GRID_SIZE - INTERACTION_RANGE) {
+            grid_index[i][1] = (grid_index[i][0] + 1) % GRID_NUM;
+        } else {
+            grid_index[i][1] = -1;
+        }
+    }
+
+    // *** boid.grid_indes ***
+    // first index is primally grid
+    // other indices are overlapped grid and -1 mean no overlapping
+    unsigned int n = 0;
+    for (int i = 0; i < 2; ++i) {
+        if (grid_index[0][i] == -1) continue;
+        for (int j = 0; j < 2; ++j) {
+            if (grid_index[1][j] == -1) continue;
+            for (int k = 0; k < 2; ++k) {
+                if (grid_index[2][k] == -1) continue;
+                boid.grid_index[n] = grid_index[0][i] + grid_index[1][j] * this->GRID_NUM + grid_index[2][k] * this->GRID_NUM * this->GRID_NUM;
+                n++;
+            }
+        }
+    }
+
+    while (n < 8) {
+        boid.grid_index[n] = -1;
+        n++;
+    }
+
+    for (int i = 0; i < 8; ++i) {
+        if (boid.grid_index[i] < 0) {
+            continue;
+        }
+        this->grid[boid.grid_index[i]].push_back(&boid);
+    }
+}
+
+

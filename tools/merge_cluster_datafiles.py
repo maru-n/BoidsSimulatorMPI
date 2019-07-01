@@ -47,12 +47,17 @@ for fname in data_fnames:
 t = 0
 
 X = np.zeros((N, 3), dtype=np.float32)
-ids = np.zeros(N)
+ids = np.zeros(N, dtype=np.uint32)
+finish = False
 while True:
     nums = []
     idx = 0
     for f in data_files:
+        #print(f)
         d = f.read(4)
+        if(len(d)!=4):
+            finish = True
+            break
         n = struct.unpack("<I", d)[0]
         nums.append(n)
 
@@ -60,8 +65,11 @@ while True:
         X[idx:idx+n]   = np.ndarray((n, 3), buffer=f.read(4*n*3), dtype=np.float32)
         idx += n
 
+    if finish:
+        print("# merge finished.")
+        break
 
-    assert len(np.unique(ids)) == X.shape[0]
+    assert len(np.unique(ids)) == N
 
     X = X[ids.argsort()]
     X.tofile(of)

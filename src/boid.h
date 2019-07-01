@@ -31,6 +31,8 @@ public:
 	unsigned id;
 	Vector3D position;
 	Vector3D velocity;
+
+	int grid_index[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
 };
 
 typedef struct _boid {

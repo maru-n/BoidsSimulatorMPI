@@ -7,17 +7,20 @@ project(MassiveSwarm)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lboost_program_options")
 
+# for Debugger
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
+
 # compiler options on K
 if (DEFINED ENV{Env_base})
-    if (NOT $ENV{Env_base} MATCHES "K-1.2.0-20")
-        message("WARNING" "Current version of environment is not verificated: " $ENV{Env_base} "recommended version is 1.2.0-20-1")
-    endif()
     #set(K_C_CXX_FLAGS "-Xg -Kfast -Kparallel -Koptmsg=2 -V -Nsrc -Nsta")
     #set(K_C_CXX_FLAGS "-Xg -Kfast -Kparallel -Koptmsg=1 -w")
     set(K_C_CXX_FLAGS "-Xg -Kfast -Kparallel -w")
-    set(K_C_CXX_FLAGS "${K_C_CXX_FLAGS} -L/opt/rist/boost-1.53.0/lib -I/opt/rist/boost-1.53.0/include")  # boost1.53.0
+    #set(K_C_CXX_FLAGS "${K_C_CXX_FLAGS} -L/opt/rist/boost-1.53.0/lib -I/opt/rist/boost-1.53.0/include")  # boost1.53.0
+    set(K_C_CXX_FLAGS "${K_C_CXX_FLAGS} -L/opt/klocal/boost-1.65.1-fujitsu/lib -I/opt/klocal/boost-1.65.1-fujitsu/include")  # boost1.65.1
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${K_C_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${K_C_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -L/opt/klocal/boost-1.65.1-fujitsu/lib -I/opt/klocal/boost-1.65.1-fujitsu/include")
 endif()
 
 find_package(OpenMP)
@@ -38,6 +41,16 @@ if (MPI_CXX_FOUND)
             src/boid_simulation_mpi.cpp)
     target_compile_definitions(boidsim_mpi PRIVATE _MPI=1)
     install(TARGETS boidsim_mpi DESTINATION bin)
+
+    add_executable(boidsim_mpi_nogrid
+            src/main.cpp
+            src/args.cpp
+            src/boid.cpp
+            src/vector3D.cpp
+            src/boid_simulation.cpp
+            src/boid_simulation_mpi_nogrid.cpp)
+    target_compile_definitions(boidsim_mpi_nogrid PRIVATE _MPI=1)
+    install(TARGETS boidsim_mpi_nogrid DESTINATION bin)
 endif()
 
 add_executable(boidsim
@@ -48,6 +61,16 @@ add_executable(boidsim
         src/boid_simulation.cpp
         src/dtype.h)
 install(TARGETS boidsim DESTINATION bin)
+
+add_executable(boidsim_grid
+        src/main.cpp
+        src/args.cpp
+        src/boid.cpp
+        src/vector3D.cpp
+        src/boid_simulation_grid.cpp
+        src/dtype.h)
+install(TARGETS boidsim_grid DESTINATION bin)
+
 
 add_executable(boidsim_legacy
         src/legacy/main.cpp

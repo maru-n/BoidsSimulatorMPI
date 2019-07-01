@@ -159,64 +159,74 @@ int main(int argc, char **argv)
     float x, y, z;
     float coh_x, coh_y, coh_z, sep_x, sep_y, sep_z, ali_x, ali_y, ali_z;
     for (unsigned int t=0; t<args.time_step; t++) {
-        if (args.is_parallel_output) {
+
+        /* partial all outputs */
+        unsigned output_start = 0;
+        unsigned output_interval = 1;
+        unsigned output_duration = 1;
+        if ( (t >= output_start) && ((t - output_start) % output_interval < output_duration) ) {
+
+            if (args.is_parallel_output) {
 #ifdef _MPI
-            n = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_num();
-            nn = fix_byte_order(n);
-            fout.write((char *) &nn, sizeof(nn));
-            unsigned* idb = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_id_buffer_ptr();
-            for (int i = 0; i < n; ++i) {
-                id = idb[i];
-                id = fix_byte_order(id);
-                fout.write((char *) &id, sizeof(id));
-            }
-            float* d = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_buffer_ptr();
-            for (int i = 0; i < n; ++i) {
-                x = d[i*6+0];
-                y = d[i*6+1];
-                z = d[i*6+2];
-                x = fix_byte_order(x);
-                y = fix_byte_order(y);
-                z = fix_byte_order(z);
-                fout.write((char *) &x, sizeof(x));
-                fout.write((char *) &y, sizeof(y));
-                fout.write((char *) &z, sizeof(z));
-            }
-#else
-            std::cout << "Parallel output work on only MPI." << std::endl;
-            return -1;
-#endif
-        } else {
-            if (is_master()) {
-#ifdef _MPI
-                dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->gather_data();
-#endif
-                for (int i = 0; i < boid_sim->N; i++) {
-                    boid_sim->get(i, &x, &y, &z);
+                n = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_num();
+                nn = fix_byte_order(n);
+                fout.write((char *) &nn, sizeof(nn));
+                unsigned* idb = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_id_buffer_ptr();
+                for (int i = 0; i < n; ++i) {
+                    id = idb[i];
+                    id = fix_byte_order(id);
+                    fout.write((char *) &id, sizeof(id));
+                }
+                float* d = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_buffer_ptr();
+                for (int i = 0; i < n; ++i) {
+                    x = d[i*6+0];
+                    y = d[i*6+1];
+                    z = d[i*6+2];
                     x = fix_byte_order(x);
                     y = fix_byte_order(y);
                     z = fix_byte_order(z);
                     fout.write((char *) &x, sizeof(x));
                     fout.write((char *) &y, sizeof(y));
                     fout.write((char *) &z, sizeof(z));
-                    if (args.is_force_data_output) {
-                        boid_sim->get_force(i, &coh_x, &coh_y, &coh_z, &sep_x, &sep_y, &sep_z, &ali_x, &ali_y, &ali_z);
-                        fout.write((char *) &coh_x, sizeof(coh_x));
-                        fout.write((char *) &coh_y, sizeof(coh_y));
-                        fout.write((char *) &coh_z, sizeof(coh_z));
-                        fout.write((char *) &sep_x, sizeof(sep_x));
-                        fout.write((char *) &sep_y, sizeof(sep_y));
-                        fout.write((char *) &sep_z, sizeof(sep_z));
-                        fout.write((char *) &ali_x, sizeof(ali_x));
-                        fout.write((char *) &ali_y, sizeof(ali_y));
-                        fout.write((char *) &ali_z, sizeof(ali_z));
+                }
+#else
+                std::cout << "Parallel output work on only MPI." << std::endl;
+                return -1;
+#endif
+            } else {
+#ifdef _MPI
+                dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->gather_data();
+#endif
+                if (is_master()) {
+                    for (int i = 0; i < boid_sim->N; i++) {
+                        boid_sim->get(i, &x, &y, &z);
+                        x = fix_byte_order(x);
+                        y = fix_byte_order(y);
+                        z = fix_byte_order(z);
+                        fout.write((char *) &x, sizeof(x));
+                        fout.write((char *) &y, sizeof(y));
+                        fout.write((char *) &z, sizeof(z));
+                        if (args.is_force_data_output) {
+                            boid_sim->get_force(i, &coh_x, &coh_y, &coh_z, &sep_x, &sep_y, &sep_z, &ali_x, &ali_y,
+                                                &ali_z);
+                            fout.write((char *) &coh_x, sizeof(coh_x));
+                            fout.write((char *) &coh_y, sizeof(coh_y));
+                            fout.write((char *) &coh_z, sizeof(coh_z));
+                            fout.write((char *) &sep_x, sizeof(sep_x));
+                            fout.write((char *) &sep_y, sizeof(sep_y));
+                            fout.write((char *) &sep_z, sizeof(sep_z));
+                            fout.write((char *) &ali_x, sizeof(ali_x));
+                            fout.write((char *) &ali_y, sizeof(ali_y));
+                            fout.write((char *) &ali_z, sizeof(ali_z));
+                        }
                     }
                 }
             }
         }
 
         if(is_master()) {
-            std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
+            //std::cout << "  " << t << "/" << args.time_step << "\r" << std::flush;
+            std::cout << "  " << t << "/" << args.time_step << std::endl << std::flush;
         }
         boid_sim->update();
     }

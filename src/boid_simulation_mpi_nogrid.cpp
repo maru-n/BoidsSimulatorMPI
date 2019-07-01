@@ -161,11 +161,6 @@ void BoidSimulationMultiNode::init()
 
     margin_width = std::max(std::max(separation.sight_distance, alignment.sight_distance), cohesion.sight_distance);
 
-    this->buffer_2_margin_buffer_idx = new unsigned int[N];
-    field_size_local_x_with_margin = field_size_local_x + margin_width*2;
-    field_size_local_y_with_margin = field_size_local_y + margin_width*2;
-    field_size_local_z_with_margin = field_size_local_z + margin_width*2;
-
     margin_x_lower = space_x_lower - margin_width;
     if (margin_x_lower < 0.0) margin_x_lower += field_size;
 
@@ -192,7 +187,6 @@ void BoidSimulationMultiNode::init()
     }
     //MPI_Bcast(data_buffer, N*6, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Bcast(data_buffer_swap, N*6, MPI_FLOAT, 0, MPI_COMM_WORLD);
-    this->init_list_grid();
 
     unsigned id;
     //double x, y, z, vx, vy, vz;
@@ -207,11 +201,6 @@ void BoidSimulationMultiNode::init()
         vx = data_buffer_swap[i*6+3];
         vy = data_buffer_swap[i*6+4];
         vz = data_buffer_swap[i*6+5];
-
-        if (x == field_size_X) x = 0.0f;
-        if (y == field_size_Y) y = 0.0f;
-        if (z == field_size_Z) z = 0.0f;
-
         /*
         if (x >= space_x_lower && (mpi_position_x+1==mpi_topology_x ? x <= space_x_upper : x < space_x_upper) &&
             y >= space_y_lower && (mpi_position_y+1==mpi_topology_y ? y <= space_y_upper : y < space_y_upper) &&
@@ -220,8 +209,6 @@ void BoidSimulationMultiNode::init()
         if (x >= space_x_lower &&  x < space_x_upper &&
             y >= space_y_lower &&  y < space_y_upper &&
             z >= space_z_lower &&  z < space_z_upper ) {
-            buffer_2_margin_buffer_idx[data_buffer_count / 6] = margin_data_buffer_count / 6;
-
             data_id_buffer[data_buffer_count/6] = id;
             data_buffer[data_buffer_count+0] = x;
             data_buffer[data_buffer_count+1] = y;
@@ -268,7 +255,6 @@ void BoidSimulationMultiNode::update()
 #pragma omp for
 //#pragma omp for schedule(guided)
 #endif
-    this->update_list_grid();
 
     for(int i=0; i<data_buffer_count/6; i++) {
         dv_coh[i].x = dv_coh[i].y = dv_coh[i].z =
@@ -279,15 +265,8 @@ void BoidSimulationMultiNode::update()
         int neivers_num_ali = 0;
 
         this_boid.set_serialized_data(&data_buffer[i*6]);
-        unsigned int idx = buffer_2_margin_buffer_idx[i];
-
-        //std::list<unsigned int> target_boids_idx_list = this->grid[grid_index[idx][0]];
-        std::list<unsigned int> target_boids_idx_list = this->grid[grid_index[idx][0]];
-
-        std::list<unsigned int>::iterator itr;
-        for(itr = target_boids_idx_list.begin(); itr != target_boids_idx_list.end(); ++itr) {
-            unsigned int j = *itr;
-        //for(int j=0; j<margin_data_buffer_count/6; j++) {
+        //if(data_id_buffer[i]==13) {std::cerr << "step:" << step << " #13 see ";}
+        for(int j=0; j<margin_data_buffer_count/6; j++) {
 
             that_boid.set_serialized_data(&margin_data_buffer[j*6]);
 
@@ -430,7 +409,6 @@ void BoidSimulationMultiNode::update()
             send_data_id_buffer[send_data_buffer_count/6] = id;
             send_data_buffer_count+=6;
         } else {
-            buffer_2_margin_buffer_idx[data_buffer_count_new/6] = margin_data_buffer_count_new/6;
             data_id_buffer_swap[data_buffer_count_new/6] = id;
             data_buffer_swap[data_buffer_count_new+0] = x;
             data_buffer_swap[data_buffer_count_new+1] = y;
@@ -447,6 +425,7 @@ void BoidSimulationMultiNode::update()
             margin_data_buffer_swap[margin_data_buffer_count_new+4] = vy;
             margin_data_buffer_swap[margin_data_buffer_count_new+5] = vz;
             margin_data_buffer_count_new +=6;
+
         }
     }
     data_buffer_count = data_buffer_count_new;
@@ -514,9 +493,6 @@ void BoidSimulationMultiNode::update()
         if (x >= space_x_lower &&  x < space_x_upper &&
             y >= space_y_lower &&  y < space_y_upper &&
             z >= space_z_lower &&  z < space_z_upper ) {
-
-            buffer_2_margin_buffer_idx[data_buffer_count/6] = margin_data_buffer_count/6;
-
             data_id_buffer[data_buffer_count/6] = id;
             data_buffer[data_buffer_count+0] = x;
             data_buffer[data_buffer_count+1] = y;
@@ -540,6 +516,8 @@ void BoidSimulationMultiNode::update()
         }
 
     }
+
+    //this->gather_data();
 }
 
 //int BoidSimulationMultiNode::get(unsigned int id, double* x, double* y, double* z)
@@ -584,168 +562,4 @@ void BoidSimulationMultiNode::gather_data()
         MPI_Wait(&request, &status);
     }
 }
-
-void BoidSimulationMultiNode::init_list_grid() {
-    //this->grid_index = new int[N];
-    this->grid_index = new int*[N];
-    for (int i = 0; i < N; ++i) {
-        this->grid_index[i] = new int[8];
-        for (int j = 0; j < 8; ++j) {
-            this->grid_index[i][j] = -1;
-        }
-    }
-
-    this->INTERACTION_RANGE = (float) max(max(this->cohesion.sight_distance, this->alignment.sight_distance), this->separation.sight_distance);
-    this->GRID_NUM = int(field_size_local_x_with_margin / (INTERACTION_RANGE*2));
-    this->grid.resize(GRID_NUM*GRID_NUM*GRID_NUM);
-    this->GRID_SIZE = float(field_size_local_x_with_margin / this->GRID_NUM);
-
-
-    if (INTERACTION_RANGE * 2 >= this->GRID_SIZE) {
-        std::cerr << "Invalid GRID_NUM!!! : " << this->GRID_NUM  << std::endl;
-        exit(-1);
-    }
-    if (is_master) {
-
-        cout << "# Grid List Optimization enabled" << endl
-             << "# grid num :" << this->GRID_NUM << endl
-             << "# grid size:" << this->GRID_SIZE << endl;
-    }
-
-    this->clear_list_grid();
-}
-
-void BoidSimulationMultiNode::clear_list_grid() {
-    for (int i = 0; i < grid.size(); ++i) {
-        grid[i].clear();
-    }
-}
-
-void BoidSimulationMultiNode::update_list_grid() {
-    this->clear_list_grid();
-    for (int i = 0; i < margin_data_buffer_count/6; ++i) {
-        this->update_list_grid(i);
-    }
-}
-
-void BoidSimulationMultiNode::update_list_grid(unsigned int buffer_idx) {
-
-
-    float local_pos[3];
-    local_pos[0] = margin_data_buffer[buffer_idx*6+0]-space_x_lower+margin_width;
-    local_pos[1] = margin_data_buffer[buffer_idx*6+1]-space_y_lower+margin_width;
-    local_pos[2] = margin_data_buffer[buffer_idx*6+2]-space_z_lower+margin_width;
-    for (int i = 0; i < 3; ++i) {
-        if (local_pos[i] > field_size_local_x_with_margin) {
-            local_pos[i] -= field_size;
-        } else if (local_pos[i] < 0.0) {
-            local_pos[i] += field_size;
-        }
-    }
-
-    /*
-    int grid_index_tmp[3];
-    int grid_x, grid_y, grid_z, n;
-    grid_index_tmp[0] = int(local_pos[0] / this->GRID_SIZE);
-    grid_index_tmp[1] = int(local_pos[1] / this->GRID_SIZE);
-    grid_index_tmp[2] = int(local_pos[2] / this->GRID_SIZE);
-    this->grid_index[buffer_idx] = grid_index_tmp[0] + grid_index_tmp[1] * this->GRID_NUM + grid_index_tmp[2] * this->GRID_NUM * this->GRID_NUM;
-
-    for (int i = -1; i <2; ++i) {
-        grid_x = (grid_index_tmp[0] + i + GRID_NUM) % GRID_NUM;
-        for (int j = -1; j <2; ++j) {
-            grid_y = (grid_index_tmp[1] + j + GRID_NUM) % GRID_NUM;
-            for (int k = -1; k <2; ++k) {
-                grid_z = (grid_index_tmp[2] + k + GRID_NUM) % GRID_NUM;
-                grid[grid_x + grid_y * GRID_NUM + grid_z * GRID_NUM * GRID_NUM].push_back(buffer_idx);
-            }
-        }
-    }
-    */
-
-    int grid_index_tmp[3][2];
-    grid_index_tmp[0][0] = int(local_pos[0] / this->GRID_SIZE);
-    grid_index_tmp[1][0] = int(local_pos[1] / this->GRID_SIZE);
-    grid_index_tmp[2][0] = int(local_pos[2] / this->GRID_SIZE);
-
-    grid_index_tmp[0][0] = min(max(grid_index_tmp[0][0], 0), int(this->GRID_NUM-1));
-    grid_index_tmp[1][0] = min(max(grid_index_tmp[1][0], 0), int(this->GRID_NUM-1));
-    grid_index_tmp[2][0] = min(max(grid_index_tmp[2][0], 0), int(this->GRID_NUM-1));
-
-
-    for (int i = 0; i < 3; ++i) {
-        if (grid_index_tmp[i][0] < 0 || grid_index_tmp[i][0] >= GRID_NUM ) {
-
-
-            cerr << "----debug----" << endl;
-            cerr << "error2:" << buffer_idx << ":" << i << ":" << grid_index_tmp[i][0] << endl;
-            cerr << "id:" << margin_data_id_buffer[buffer_idx] << endl;
-            cerr << "x: " << margin_data_buffer[buffer_idx*6+0] << endl;
-            cerr << "y: " << margin_data_buffer[buffer_idx*6+1] << endl;
-            cerr << "z: " << margin_data_buffer[buffer_idx*6+2] << endl;
-            cerr << "margin_width:" << margin_width << endl;
-            cerr << "x_l:" << space_x_lower << endl;
-            cerr << "y_l:" << space_y_lower << endl;
-            cerr << "z_l:" << space_z_lower << endl;
-            cerr << "lp_x:" << local_pos[0] << endl;
-            cerr << "lp_y:" << local_pos[1] << endl;
-            cerr << "lp_z:" << local_pos[2] << endl;
-            cerr << "lp_z:" << local_pos[2] << endl;
-            cerr << "GRID_SIZE:" << GRID_SIZE << endl;
-            cerr << "rank:" << mpi_rank << endl;
-            cerr << "buffer_idx:" << buffer_idx << endl;
-            cerr << "field_size_local_x_with_margin:" << field_size_local_x_with_margin << endl;
-            cerr << "-------------" << endl;
-
-        }
-    }
-
-
-    float pos_in_grid[3];
-    pos_in_grid[0] = local_pos[0] - grid_index_tmp[0][0] * this->GRID_SIZE;
-    pos_in_grid[1] = local_pos[1] - grid_index_tmp[1][0] * this->GRID_SIZE;
-    pos_in_grid[2] = local_pos[2] - grid_index_tmp[2][0] * this->GRID_SIZE;
-
-    for (int i = 0; i <3; ++i) {
-        if (pos_in_grid[i] < INTERACTION_RANGE) {
-            grid_index_tmp[i][1] = (grid_index_tmp[i][0] - 1 + GRID_NUM) % GRID_NUM;
-        } else if (pos_in_grid[i] >= this->GRID_SIZE - INTERACTION_RANGE) {
-            grid_index_tmp[i][1] = (grid_index_tmp[i][0] + 1) % GRID_NUM;
-        } else {
-            grid_index_tmp[i][1] = -1;
-        }
-    }
-
-
-    // *** boid.grid_indes ***
-    // first index is primally grid
-    // other indices are overlapped grid and -1 mean no overlapping
-    unsigned int n = 0;
-    for (int i = 0; i < 2; ++i) {
-        if (grid_index_tmp[0][i] == -1) continue;
-        for (int j = 0; j < 2; ++j) {
-            if (grid_index_tmp[1][j] == -1) continue;
-            for (int k = 0; k < 2; ++k) {
-                if (grid_index_tmp[2][k] == -1) continue;
-                this->grid_index[buffer_idx][n] = grid_index_tmp[0][i] + grid_index_tmp[1][j] * this->GRID_NUM + grid_index_tmp[2][k] * this->GRID_NUM * this->GRID_NUM;
-                n++;
-            }
-        }
-    }
-
-
-    while (n < 8) {
-        this->grid_index[buffer_idx][n] = -1;
-        n++;
-    }
-
-    for (int i = 0; i < 8; ++i) {
-        if (this->grid_index[buffer_idx][i] < 0) {
-            continue;
-        }
-        this->grid[this->grid_index[buffer_idx][i]].push_back(buffer_idx);
-    }
-}
-
-
 

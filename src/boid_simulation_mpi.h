@@ -25,6 +25,19 @@ public:
     unsigned int get_data_num(){return data_buffer_count/6;};
     float* get_data_buffer_ptr(){return data_buffer;};
     unsigned * get_id_buffer_ptr(){return data_id_buffer;};
+
+
+    // List Grid Optimization
+    void init_list_grid();
+    void clear_list_grid();
+    void update_list_grid(unsigned int buffer_idx);
+    void update_list_grid();
+
+    unsigned int* buffer_2_margin_buffer_idx;
+    std::vector<std::list<unsigned int>> grid;
+    //int *grid_index;
+    int **grid_index;
+
 protected:
 
 
@@ -57,6 +70,7 @@ protected:
     double margin_x_lower, margin_x_upper, margin_y_lower, margin_y_upper, margin_z_lower, margin_z_upper;
     //double padding_x_lower, padding_x_upper, padding_y_lower, padding_y_upper, padding_z_lower, padding_z_upper;
     double field_size_local_x, field_size_local_y, field_size_local_z;
+    double field_size_local_x_with_margin, field_size_local_y_with_margin, field_size_local_z_with_margin;
     double margin_width;
     bool is_master;
     int mpi_dim;

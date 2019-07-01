@@ -8,6 +8,8 @@
 #include "boid.h"
 #include "dtype.h"
 #include "vector3D.h"
+#include <vector>
+#include <list>
 
 
 class BoidSimulation {
@@ -45,6 +47,10 @@ public:
     interaction_parameters separation, alignment, cohesion;
     velocity_parameters velocity;
     Boid* boids;
+
+
+    unsigned int GRID_NUM = 9;  //TODO:
+
 protected:
     std::string initialization_type;
     int rand_seed;
@@ -52,6 +58,14 @@ protected:
     Vector3D *dv_coh;
     Vector3D *dv_sep;
     Vector3D *dv_ali;
+
+    float INTERACTION_RANGE;
+    //unsigned int GRID_NUM = 9;  //TODO:
+    float GRID_SIZE;
+    std::vector<std::list<Boid*>> grid;
+
+    void clear_list_grid();
+    void update_list_grid(Boid &boid);
 };
 
 std::ostream& operator<<(std::ostream& stream, const BoidSimulation& boidsim);
