@@ -19,6 +19,8 @@ const unsigned int FPS = 30;
 bool is_little_endian;
 BoidSimulation* boid_sim;
 std::ofstream fout;
+bool is_output_v;
+std::ofstream v_fout;
 
 
 template <typename T> T fix_byte_order(T value) {
@@ -121,6 +123,12 @@ int main(int argc, char **argv)
 
 
     // setup output file
+    if (args.velocity_output_filename.empty()) {
+        is_output_v = false;
+    } else {
+        is_output_v = true;
+    }
+
     if (args.is_parallel_output) {
         if (is_master()) {
             string fname = args.output_filename + "__header";
@@ -138,6 +146,14 @@ int main(int argc, char **argv)
             std::cerr << "Couldn't open: " << fname << std::endl;
             exit(-1);
         }
+        if (is_output_v) {
+            fname = args.velocity_output_filename + (boost::format("__c_%06d") % get_node_id()).str();
+            v_fout.open(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+            if (!v_fout) {
+                std::cerr << "Couldn't open: " << fname << std::endl;
+                exit(-1);
+            }
+        }
     } else {
         string fname = args.output_filename;
         fout.open(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
@@ -146,6 +162,16 @@ int main(int argc, char **argv)
             exit(-1);
         }
         write_header(fout, args);
+
+        if (is_output_v) {
+            fname = args.velocity_output_filename;
+            v_fout.open(fname.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
+            if (!v_fout) {
+                std::cerr << "Couldn't open: " << fname << std::endl;
+                exit(-1);
+            }
+            write_header(v_fout, args);
+        }
     }
 
 
@@ -156,7 +182,7 @@ int main(int argc, char **argv)
     //double x, y, z;
     //float fx, fy, fz;
     unsigned id, n, nn;
-    float x, y, z;
+    float x, y, z, vx, vy, vz;
     float coh_x, coh_y, coh_z, sep_x, sep_y, sep_z, ali_x, ali_y, ali_z;
     for (unsigned int t=0; t<args.time_step; t++) {
 
@@ -171,11 +197,18 @@ int main(int argc, char **argv)
                 n = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_num();
                 nn = fix_byte_order(n);
                 fout.write((char *) &nn, sizeof(nn));
+                if (is_output_v) {
+                    v_fout.write((char *) &nn, sizeof(nn));
+
+                }
                 unsigned* idb = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_id_buffer_ptr();
                 for (int i = 0; i < n; ++i) {
                     id = idb[i];
                     id = fix_byte_order(id);
                     fout.write((char *) &id, sizeof(id));
+                    if (is_output_v) {
+                        v_fout.write((char *) &id, sizeof(id));
+                    }
                 }
                 float* d = dynamic_cast<BoidSimulationMultiNode*>(boid_sim)->get_data_buffer_ptr();
                 for (int i = 0; i < n; ++i) {
@@ -188,6 +221,18 @@ int main(int argc, char **argv)
                     fout.write((char *) &x, sizeof(x));
                     fout.write((char *) &y, sizeof(y));
                     fout.write((char *) &z, sizeof(z));
+
+                    if (is_output_v) {
+                        x = d[i*6+3];
+                        y = d[i*6+4];
+                        z = d[i*6+5];
+                        x = fix_byte_order(x);
+                        y = fix_byte_order(y);
+                        z = fix_byte_order(z);
+                        v_fout.write((char *) &x, sizeof(x));
+                        v_fout.write((char *) &y, sizeof(y));
+                        v_fout.write((char *) &z, sizeof(z));
+                    }
                 }
 #else
                 std::cout << "Parallel output work on only MPI." << std::endl;
@@ -206,6 +251,17 @@ int main(int argc, char **argv)
                         fout.write((char *) &x, sizeof(x));
                         fout.write((char *) &y, sizeof(y));
                         fout.write((char *) &z, sizeof(z));
+
+                        if (is_output_v) {
+                            boid_sim->get_v(i, &x, &y, &z);
+                            x = fix_byte_order(x);
+                            y = fix_byte_order(y);
+                            z = fix_byte_order(z);
+                            v_fout.write((char *) &x, sizeof(x));
+                            v_fout.write((char *) &y, sizeof(y));
+                            v_fout.write((char *) &z, sizeof(z));
+                        }
+
                         if (args.is_force_data_output) {
                             boid_sim->get_force(i, &coh_x, &coh_y, &coh_z, &sep_x, &sep_y, &sep_z, &ali_x, &ali_y,
                                                 &ali_z);
@@ -233,6 +289,9 @@ int main(int argc, char **argv)
     if (is_master()) {
         std::cout << "simulation finished." << std::endl;
         fout.close();
+        if (is_output_v) {
+            v_fout.close();
+        }
     }
     delete boid_sim;
 

@@ -1,5 +1,32 @@
 #!/usr/bin/env python
 
+import struct
+
+
+def load_metadata(filename):
+    HEADER_FORMAT = "<4sBBIIIIIffffff"
+    HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
+    metadata = {}
+    with open(filename, 'rb') as f:
+        bindata = struct.unpack(HEADER_FORMAT, f.read(HEADER_SIZE))
+        metadata['N'] = bindata[4]
+        metadata['steps'] = bindata[5]
+        metadata['t_0'] = bindata[6]
+        metadata['x_min'] = bindata[8]
+        metadata['x_max'] = bindata[9]
+        metadata['y_min'] = bindata[10]
+        metadata['y_max'] = bindata[11]
+        metadata['z_min'] = bindata[12]
+        metadata['z_max'] = bindata[13]
+    return metadata
+
+
+
+
+################
+# Legacy code
+################
+
 import sys
 import os
 import numpy as np
@@ -90,7 +117,7 @@ class SwarmDataManager(object):
     def close(self):
         self.file.close()
 
-def load_metadata(filename):
+def load_metadata_legacy(filename):
     sdm = SwarmDataManager(filename)
     metadata = dict(
         file_name = sdm.file_name,
@@ -106,9 +133,17 @@ def load_metadata(filename):
     return metadata
 
 
-def load_data(filename, time, vel_calc_step=1):
+def load_data(filename, time, vel_calc_step=1, end_time=None, time_interval=None):
     sdm = SwarmDataManager(filename)
-    return calc_vel(sdm, time, step=vel_calc_step)
+    if end_time is None and time_interval is None:
+        return calc_vel(sdm, time, step=vel_calc_step)
+    else:
+        X = np.empty((sdm.N, 6, (end_time-time)//time_interval))
+        for i, t in enumerate(range(time, end_time, time_interval)):
+            x, v = calc_vel(sdm, t, step=vel_calc_step)
+            X[:,0:3,i] = x
+            X[:,3:6,i] = v
+        return X
 
 def calc_vel(sdm, time, step=1):
     sdm.set_timestep(time)

@@ -35,6 +35,8 @@ public:
     virtual void update();
     //virtual int get(unsigned int id, double* x, double* y, double* z);
     virtual int get(unsigned int id, float* x, float* y, float* z);
+    virtual int get_v(unsigned int id, float* vx, float* vy, float* vz);
+    virtual int get(unsigned int id, float* x, float* y, float* z, float* vx, float* vy, float* vz);
     bool is_openmp_enabled() const;
     int get_max_threads() const;
 

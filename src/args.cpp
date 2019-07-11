@@ -23,8 +23,8 @@ Args::Args(int argc, const char **argv)
             ("help,h", "help")
             ("setting,s", value<string>(&setting_filename), "simulation setting file with .ini format.")
             ("output,o", value<string>(&output_filename), "output file.")
+            ("velocity-output", value<string>(&velocity_output_filename), "output file for velocity data.")
             ("parallel-output,p", "output data on several nodes on MPI.")
-            ("not-output-init-state", "NOT output initial state.")
             ("force-data-output", "force vector output on data. (this option is experimental!!!)")
             ;
     options_description sim_options("simulation parameters (have priority over setting file.)");
@@ -62,11 +62,6 @@ Args::Args(int argc, const char **argv)
         is_parallel_output = true;
     }
 #endif
-
-    is_output_init_state = true;
-    if(values.count("not-output-init-state")) {
-        is_output_init_state = false;
-    }
 
     // --force-data-output
     // TODO: this option is experimental!!!

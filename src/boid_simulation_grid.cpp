@@ -264,6 +264,21 @@ int BoidSimulation::get(unsigned int id, float* x, float* y, float* z)
     return 0;
 }
 
+int BoidSimulation::get_v(unsigned int id, float* vx, float* vy, float* vz)
+{
+    *vx = boids[id].velocity.x;
+    *vy = boids[id].velocity.y;
+    *vz = boids[id].velocity.z;
+    return 0;
+}
+
+int BoidSimulation::get(unsigned int id, float* x, float* y, float* z, float* vx, float* vy, float* vz)
+{
+    this->get(id, x , y, z);
+    this->get_v(id, vx, vy, vz);
+    return 0;
+}
+
 int BoidSimulation::get_force(unsigned int id, float* coh_x, float* coh_y, float* coh_z, float* sep_x, float* sep_y, float* sep_z, float* ali_x, float* ali_y, float* ali_z)
 {
     *coh_x = (float)cohesion.force_coefficient*dv_coh[id].x;

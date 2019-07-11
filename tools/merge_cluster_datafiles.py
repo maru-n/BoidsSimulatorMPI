@@ -4,33 +4,33 @@ import numpy as np
 import sys, os, struct, glob
 from swarm_util import SwarmDataManager
 
-USAGE = """\
-USAGE: merge_cluster.py header_file data_file_1 data_file_2 ... output_file\n \
-       merge_cluster.py data_file_dir output_file\n \
-"""
+import argparse
 
-INITIAL_TIME = 0
+parser = argparse.ArgumentParser()
 
-if len(sys.argv) < 3:
-    print(USAGE)
+parser.add_argument('input_dir')
+parser.add_argument('output_file')
+parser.add_argument('--time-start', type=int)
+parser.add_argument('--time-end', type=int)
+
+args = parser.parse_args()
+
+try:
+    header_fname = glob.glob(os.path.join(args.input_dir, '*__header'))[0]
+except Exception as e:
+    print("can not find header file.")
     sys.exit()
 
-if len(sys.argv) == 3:
-    data_dir = sys.argv[1]
-    header_fname = glob.glob(os.path.join(data_dir, '*__header'))[0]
-    data_fnames = glob.glob(os.path.join(data_dir, '*__c_*'))
-    output_fname = sys.argv[2]
-else:
-    header_fname = sys.argv[1]
-    data_fnames = sys.argv[2:-1]
-    output_fname = sys.argv[-1]
+data_fnames = glob.glob(os.path.join(args.input_dir, '*__c_*'))
 
-of = open(output_fname, 'wb')
+of = open(args.output_file, 'wb')
 
 # get the information from header
 sdm = SwarmDataManager(header_fname)
 N = sdm.N
 sdm.close()
+
+print(f"N = {N}")
 
 with open(header_fname, 'rb') as f:
     h = f.read()
@@ -39,9 +39,9 @@ with open(header_fname, 'rb') as f:
 data_files = []
 for fname in data_fnames:
     #f = open(fname, 'rb')
-    #f = open(fname, 'rb', buffering=4096*1024)
+    f = open(fname, 'rb', buffering=4096*1024)
     #f = open(fname, 'rb', buffering=4096*512)
-    f = open(fname, 'rb', buffering=4096*256)
+    #f = open(fname, 'rb', buffering=4096*256)
     data_files.append(f)
 
 t = 0
@@ -50,6 +50,13 @@ X = np.zeros((N, 3), dtype=np.float32)
 ids = np.zeros(N, dtype=np.uint32)
 finish = False
 while True:
+    skip = False
+    if args.time_start is not None and t < args.time_start:
+        skip = True
+    elif args.time_end is not None and t >= args.time_end:
+        skip = True
+        finish = True
+
     nums = []
     idx = 0
     for f in data_files:
@@ -61,20 +68,27 @@ while True:
         n = struct.unpack("<I", d)[0]
         nums.append(n)
 
-        ids[idx:idx+n] = np.ndarray(n, buffer=f.read(4*n), dtype=np.uint32)
-        X[idx:idx+n]   = np.ndarray((n, 3), buffer=f.read(4*n*3), dtype=np.float32)
-        idx += n
+        if skip:
+            f.seek(4*n*4,1)
+        else:
+            try:
+                ids[idx:idx+n] = np.ndarray(n, buffer=f.read(4*n), dtype=np.uint32)
+                X[idx:idx+n]   = np.ndarray((n, 3), buffer=f.read(4*n*3), dtype=np.float32)
+                idx += n
+            except Exception as e:
+                finish = True
 
     if finish:
         print("# merge finished.")
         break
 
-    assert len(np.unique(ids)) == N
+    if not skip:
+        assert len(np.unique(ids)) == N
 
-    X = X[ids.argsort()]
-    X.tofile(of)
+        X = X[ids.argsort()]
+        X.tofile(of)
 
-    print(t, "(max_num:{} min_num:{})".format(np.max(nums), np.min(nums)))
+    print(f'{t} (max_num:{np.max(nums)} min_num:{np.min(nums)}) {"(skip)" if skip else "(save)"}')
     t += 1
 
     # if t == 50:

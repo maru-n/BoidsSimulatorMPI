@@ -97,29 +97,45 @@ void BoidSimulation::init()
             boids[i].id = i;
         }
     } else {
-        // TODO:
-        /*
         std::ifstream init_data_file(initialization_type,  std::ios::binary);
         if (!init_data_file) {
             std::cerr << "Invalid initial placement type or file name: " << initialization_type << std::endl;
             exit(-1);
         }
+        /*
         data_file_header_v02 init_data_header;
         init_data_file.read((char*)&init_data_header, sizeof(init_data_header));
         if (init_data_header.N != this->N) {
             std::cerr << "Setup population is " << this->N << ". but in initial placement file population is " << init_data_header.N << std::endl;
             exit(-1);
         }
-
-        init_data_file.seekg(4 * 3 * this->N * 2, std::ios::end);
-        for (int i = 0; i < this->N; ++i) {
-            init_data_file.read((char*)&boids[i].position.x, sizeof(boids[i].position.x));
-            init_data_file.read((char*)&boids[i].position.y, sizeof(boids[i].position.y));
-            init_data_file.read((char*)&boids[i].position.z, sizeof(boids[i].position.z));
-        }
+        int seek_pos = this->N * 4 * 3 * 2;
+        init_data_file.seekg(-seek_pos, std::ios_base::end);
+         */
         for (int i = 0; i < this->N; ++i) {
             float tmp;
             init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.x = tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.y = tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.z = tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.x = tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.y = tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.z = tmp;
+            //std::cerr << "aaa:" << tmp << std::endl;
+            //init_data_file.read((char*)&boids[i].position.x, sizeof(boids[i].position.x));
+            //init_data_file.read((char*)&boids[i].position.y, sizeof(boids[i].position.y));
+            //init_data_file.read((char*)&boids[i].position.z, sizeof(boids[i].position.z));
+        }
+        /*
+        for (int i = 0; i < this->N; ++i) {
+            float tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            //std::cerr << "aaa:" << tmp << std::endl;
             boids[i].velocity.x = tmp - boids[i].position.x;
             boids[i].position.x = tmp;
             init_data_file.read((char*)&tmp, sizeof(tmp));
@@ -128,22 +144,23 @@ void BoidSimulation::init()
             init_data_file.read((char*)&tmp, sizeof(tmp));
             boids[i].velocity.z = tmp - boids[i].position.z;
             boids[i].position.z = tmp;
-            std::cerr << i << ":" << boids[i].position.x << "," << boids[i].position.y << "," << boids[i].position.z << std::endl;
             boids[i].id = i;
-        }
+        }*/
 
-        this->time_step = init_data_header.t_0 + init_data_header.step - 1;
+        //this->time_step = init_data_header.t_0 + init_data_header.step - 1;
         //this->time_step = 0;
 
         init_data_file.close();
-         */
     }
 }
 
+#include <iomanip>
+#include <limits>
 
 
 void BoidSimulation::update()
 {
+    //std::cerr << std::setprecision(std::numeric_limits<float>::max_digits10) << boids[0].position.x << "," << boids[0].velocity.x << std::endl;
 #ifdef _OPENMP
 #pragma omp parallel
 #endif
@@ -255,6 +272,21 @@ int BoidSimulation::get(unsigned int id, float* x, float* y, float* z)
     *x = boids[id].position.x;
     *y = boids[id].position.y;
     *z = boids[id].position.z;
+    return 0;
+}
+
+int BoidSimulation::get_v(unsigned int id, float* vx, float* vy, float* vz)
+{
+    *vx = boids[id].velocity.x;
+    *vy = boids[id].velocity.y;
+    *vz = boids[id].velocity.z;
+    return 0;
+}
+
+int BoidSimulation::get(unsigned int id, float* x, float* y, float* z, float* vx, float* vy, float* vz)
+{
+    this->get(id, x , y, z);
+    this->get_v(id, vx, vy, vz);
     return 0;
 }
 

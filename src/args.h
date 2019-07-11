@@ -13,6 +13,7 @@ public:
     Args(int argc, const char **argv);
     std::string setting_filename;
     std::string output_filename;
+    std::string velocity_output_filename;
     bool is_parallel_output;
     bool is_force_data_output;
     bool is_output_init_state;
