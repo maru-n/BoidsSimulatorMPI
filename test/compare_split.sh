@@ -33,7 +33,7 @@ echo -e "calculating split version...(1/2)"
 ./boidsim -s ${setting_file} -T $t_first -o ${data_name_split_first} --velocity-output ${data_name_split_first_v} > /dev/null || exit -1
 
 echo -e "generate next initialization file..."
-python ${TOOLS_PATH}generate_initialization_file.py ${data_name_split_first} ${data_name_split_first_v} $(( t_first-1 )) ${data_name_secong_init}
+python ${TOOLS_PATH}generate_initialization_file.py ${data_name_split_first} ${data_name_split_first_v} $(( t_first-1 )) ${data_name_secong_init} || exit -1
 
 echo -e "calculating split version...(2/2)"
 ./boidsim -s ${setting_file} -T $t_last -o ${data_name_split_second} --initialization ${data_name_secong_init} > /dev/null || exit -1

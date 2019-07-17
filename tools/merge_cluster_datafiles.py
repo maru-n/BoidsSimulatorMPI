@@ -12,6 +12,7 @@ parser.add_argument('input_dir')
 parser.add_argument('output_file')
 parser.add_argument('--time-start', type=int)
 parser.add_argument('--time-end', type=int)
+parser.add_argument('--velocity', action="store_true")
 
 args = parser.parse_args()
 
@@ -38,10 +39,16 @@ with open(header_fname, 'rb') as f:
 
 data_files = []
 for fname in data_fnames:
+    if args.velocity:
+        if not 'vel' in fname:
+            continue
+    else:
+        if 'vel' in fname:
+            continue
     #f = open(fname, 'rb')
-    f = open(fname, 'rb', buffering=4096*1024)
+    #f = open(fname, 'rb', buffering=4096*1024)
     #f = open(fname, 'rb', buffering=4096*512)
-    #f = open(fname, 'rb', buffering=4096*256)
+    f = open(fname, 'rb', buffering=4096*256)
     data_files.append(f)
 
 t = 0
