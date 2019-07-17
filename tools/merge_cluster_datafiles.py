@@ -67,7 +67,6 @@ while True:
     nums = []
     idx = 0
     for f in data_files:
-        #print(f)
         d = f.read(4)
         if(len(d)!=4):
             finish = True

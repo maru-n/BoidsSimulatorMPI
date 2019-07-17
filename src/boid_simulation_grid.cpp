@@ -20,6 +20,19 @@
 
 using namespace std;
 
+template <typename T> T fix_byte_order2(T value) {
+    int x = 1;   // 0x00000001
+    if (*(char *)&x != 0) {
+        return value;  //is little endian
+    }
+    T ret;
+    int size = sizeof(T);
+    for (int i = 0; i < size; ++i) {
+        ((char*)&ret)[i] = ((char*)&value)[size-i-1];
+    }
+    return ret;
+}
+
 BoidSimulation::BoidSimulation() {}
 
 BoidSimulation::~BoidSimulation()
@@ -120,6 +133,28 @@ void BoidSimulation::init()
             update_list_grid(boids[i]);
         }
     } else {
+        std::ifstream init_data_file(initialization_type,  std::ios::binary);
+        if (!init_data_file) {
+            std::cerr << "Invalid initial placement type or file name: " << initialization_type << std::endl;
+            exit(-1);
+        }
+        for (int i = 0; i < this->N; ++i) {
+            boids[i].id = i;
+            float tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.x = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.y = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.z = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.x = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.y = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.z = fix_byte_order2(tmp);
+        }
+        init_data_file.close();
     }
 }
 

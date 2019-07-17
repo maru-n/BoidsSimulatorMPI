@@ -278,6 +278,10 @@ int main(int argc, char **argv)
                     }
                 }
             }
+            fout.flush();
+            if (is_output_v) {
+                v_fout.flush();
+            }
         }
 
         if(is_master()) {

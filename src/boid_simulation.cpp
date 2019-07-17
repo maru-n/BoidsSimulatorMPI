@@ -18,6 +18,20 @@
 #include <omp.h>
 #endif
 
+
+template <typename T> T fix_byte_order2(T value) {
+    int x = 1;   // 0x00000001
+    if (*(char *)&x != 0) {
+        return value;  //is little endian
+    }
+    T ret;
+    int size = sizeof(T);
+    for (int i = 0; i < size; ++i) {
+        ((char*)&ret)[i] = ((char*)&value)[size-i-1];
+    }
+    return ret;
+}
+
 BoidSimulation::BoidSimulation() {}
 
 BoidSimulation::~BoidSimulation()
@@ -102,54 +116,22 @@ void BoidSimulation::init()
             std::cerr << "Invalid initial placement type or file name: " << initialization_type << std::endl;
             exit(-1);
         }
-        /*
-        data_file_header_v02 init_data_header;
-        init_data_file.read((char*)&init_data_header, sizeof(init_data_header));
-        if (init_data_header.N != this->N) {
-            std::cerr << "Setup population is " << this->N << ". but in initial placement file population is " << init_data_header.N << std::endl;
-            exit(-1);
-        }
-        int seek_pos = this->N * 4 * 3 * 2;
-        init_data_file.seekg(-seek_pos, std::ios_base::end);
-         */
         for (int i = 0; i < this->N; ++i) {
-            float tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].position.x = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].position.y = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].position.z = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.x = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.y = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.z = tmp;
-            //std::cerr << "aaa:" << tmp << std::endl;
-            //init_data_file.read((char*)&boids[i].position.x, sizeof(boids[i].position.x));
-            //init_data_file.read((char*)&boids[i].position.y, sizeof(boids[i].position.y));
-            //init_data_file.read((char*)&boids[i].position.z, sizeof(boids[i].position.z));
-        }
-        /*
-        for (int i = 0; i < this->N; ++i) {
-            float tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            //std::cerr << "aaa:" << tmp << std::endl;
-            boids[i].velocity.x = tmp - boids[i].position.x;
-            boids[i].position.x = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.y = tmp - boids[i].position.y;
-            boids[i].position.y = tmp;
-            init_data_file.read((char*)&tmp, sizeof(tmp));
-            boids[i].velocity.z = tmp - boids[i].position.z;
-            boids[i].position.z = tmp;
             boids[i].id = i;
-        }*/
-
-        //this->time_step = init_data_header.t_0 + init_data_header.step - 1;
-        //this->time_step = 0;
-
+            float tmp;
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.x = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.y = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].position.z = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.x = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.y = fix_byte_order2(tmp);
+            init_data_file.read((char*)&tmp, sizeof(tmp));
+            boids[i].velocity.z = fix_byte_order2(tmp);
+        }
         init_data_file.close();
     }
 }

@@ -3,15 +3,15 @@
 import struct
 
 
+HEADER_FORMAT = "<4sBBIIIIIffffff"
+HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
+
 def load_metadata(filename):
-    HEADER_FORMAT = "<4sBBIIIIIffffff"
-    HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
     metadata = {}
     with open(filename, 'rb') as f:
         bindata = struct.unpack(HEADER_FORMAT, f.read(HEADER_SIZE))
         metadata['N'] = bindata[4]
         metadata['steps'] = bindata[5]
-        metadata['t_0'] = bindata[6]
         metadata['x_min'] = bindata[8]
         metadata['x_max'] = bindata[9]
         metadata['y_min'] = bindata[10]
@@ -20,6 +20,43 @@ def load_metadata(filename):
         metadata['z_max'] = bindata[13]
     return metadata
 
+
+def load_data(file_name, time_step, vel_calc_step=1, end_time=None, time_interval=1):
+    return load_data_legacy(file_name, time_step, vel_calc_step=1, end_time=None, time_interval=1)
+
+# def load_data(file_name, time_step, vel_calc_step=1, end_time=None, time_interval=1):
+#     sdm = SwarmDataManager(filename)
+#     if end_time is None:
+#         end_time = time + 1
+#
+#     N = load_metadata(file_name)['N']
+#     STEP_DATA_SIZE = struct.calcsize('f') * 3 * N
+#
+#     X = np.empty((N, 6, (end_time-time)//time_interval))
+#     with open(filename, 'rb') as f:
+#
+#         seek_pos = HEADER_SIZE + time_step * STEP_DATA_SIZE
+#         f.seek(seek_pos)
+#
+#         buffer = f.read(self.__step_data_size * s)
+#         data = np.ndarray((s, self.N, self.DATA_DIM), buffer=bd, dtype=np.float32)
+#         x, v = calc_vel(sdm, t, step=vel_calc_step)
+#         X[:,0:3,i] = x
+#         X[:,3:6,i] = v
+#
+#     def set_timestep(self, step):
+#         self.file.
+    #
+    #
+    # if end_time is None and time_interval is None:
+    #     return calc_vel(sdm, time, step=vel_calc_step)
+    # else:
+    #     X = np.empty((sdm.N, 6, (end_time-time)//time_interval))
+    #     for i, t in enumerate(range(time, end_time, time_interval)):
+    #         x =
+    #         X[:,0:3,i] = x
+    #         X[:,3:6,i] = v
+    #     return X
 
 
 
@@ -133,7 +170,7 @@ def load_metadata_legacy(filename):
     return metadata
 
 
-def load_data(filename, time, vel_calc_step=1, end_time=None, time_interval=None):
+def load_data_legacy(filename, time, vel_calc_step=1, end_time=None, time_interval=None):
     sdm = SwarmDataManager(filename)
     if end_time is None and time_interval is None:
         return calc_vel(sdm, time, step=vel_calc_step)
@@ -144,6 +181,12 @@ def load_data(filename, time, vel_calc_step=1, end_time=None, time_interval=None
             X[:,0:3,i] = x
             X[:,3:6,i] = v
         return X
+
+def load_pos(filename, time):
+    sdm = SwarmDataManager(filename)
+    sdm.set_timestep(time)
+    X = sdm.read_pos()
+    return X
 
 def calc_vel(sdm, time, step=1):
     sdm.set_timestep(time)
@@ -230,7 +273,6 @@ def plt_3d_xc(x, c=None, cmap=plt.cm.prism, plot_class='all', point_size=1, axis
     if plot_class=='all':
         ax.scatter3D(x[:,0], x[:, 1], x[:, 2], ',', c=c, cmap=cmap, s=point_size)
     elif plot_class=='class':
-        print("test")
         x1 = x[c==-1]
         c1 = c[c==-1]
         ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.01)
