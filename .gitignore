@@ -51,3 +51,4 @@ testdata
 .DS_Store
 
 tmp
+settings/*.initdata

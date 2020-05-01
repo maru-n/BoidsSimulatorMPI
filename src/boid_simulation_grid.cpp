@@ -7,6 +7,7 @@
 #include <math.h>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include <stdlib.h>
 
 #ifdef MPI_ENABLE
@@ -400,13 +401,17 @@ void BoidSimulation::update_list_grid(Boid &boid) {
     grid_index[1][0] = int(boid.position.y / this->GRID_SIZE);
     grid_index[2][0] = int(boid.position.z / this->GRID_SIZE);
 
+    if (grid_index[0][0] == this->GRID_NUM) grid_index[0][0] = GRID_NUM-1;
+    if (grid_index[1][0] == this->GRID_NUM) grid_index[1][0] = GRID_NUM-1;
+    if (grid_index[2][0] == this->GRID_NUM) grid_index[2][0] = GRID_NUM-1;
+
     float pos_in_grid[3];
     pos_in_grid[0] = boid.position.x - grid_index[0][0] * this->GRID_SIZE;
     pos_in_grid[1] = boid.position.y - grid_index[1][0] * this->GRID_SIZE;
     pos_in_grid[2] = boid.position.z - grid_index[2][0] * this->GRID_SIZE;
 
     for (int i = 0; i <3; ++i) {
-        if (pos_in_grid[i] < INTERACTION_RANGE) {
+        if (pos_in_grid[i] <= INTERACTION_RANGE) {
             grid_index[i][1] = (grid_index[i][0] - 1 + GRID_NUM) % GRID_NUM;
         } else if (pos_in_grid[i] >= this->GRID_SIZE - INTERACTION_RANGE) {
             grid_index[i][1] = (grid_index[i][0] + 1) % GRID_NUM;

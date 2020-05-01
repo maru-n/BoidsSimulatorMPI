@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 project(MassiveSwarm)
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
@@ -22,6 +22,27 @@ if (DEFINED ENV{Env_base})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${K_C_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -L/opt/klocal/boost-1.65.1-fujitsu/lib -I/opt/klocal/boost-1.65.1-fujitsu/include")
 endif()
+# for FX100
+#set(K_C_CXX_FLAGS "-Xg -Kfast -Kparallel -w")
+#set(K_C_CXX_FLAGS "${K_C_CXX_FLAGS} -L/opt/klocal/boost-1.65.1-fujitsu/lib -I/opt/klocal/boost-1.65.1-fujitsu/include")  # boost1.65.1
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${K_C_CXX_FLAGS}")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${K_C_CXX_FLAGS}")
+#set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -L/opt/klocal/boost-1.65.1-fujitsu/lib -I/opt/klocal/boost-1.65.1-fujitsu/include")
+
+
+execute_process(COMMAND brew --prefix libomp
+                OUTPUT_VARIABLE OpenMP_HOME
+                OUTPUT_STRIP_TRAILING_WHITESPACE)  
+message(STATUS "OpenMP Root : ${OpenMP_HOME}")
+# OpenMPのインストールチェック
+set(OpenMP_C_LIB_NAMES "omp")
+set(OpenMP_CXX_LIB_NAMES "omp")
+set(OpenMP_omp_LIBRARY "${OpenMP_HOME}/lib/")
+# キャッシュ変数なのでFORCEオプションをつける
+set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -Wno-unused-command-line-argument -I${OpenMP_HOME}/include -lomp -L${OpenMP_omp_LIBRARY}" CACHE STRING "" FORCE) 
+# 同じくキャッシュ変数なのでFORCEオプションをつける
+set(OpenMP_C_FLAGS "-fopenmp -Wno-unused-command-line-argument -I${OpenMP_HOME}/include -lomp -L${OpenMP_omp_LIBRARY}" CACHE STRING "" FORCE)
+
 
 find_package(OpenMP)
 if (OPENMP_FOUND)

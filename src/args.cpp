@@ -33,6 +33,8 @@ Args::Args(int argc, const char **argv)
             ("population,N", value<unsigned int>(&population), "Number of boids.")
             ("time-step,T", value<unsigned int>(&time_step), "Simulation time step.")
             ("field-size,F", value<double>(&field_size), "Size of simulation area.")
+            ("vmin", value<double>(&velocity_min), "minimum velocity")
+            ("vmax", value<double>(&velocity_max), "maximum velocity")
             ;
     options.add(sim_options);
 
@@ -137,5 +139,12 @@ Args::Args(int argc, const char **argv)
 
     if (values.count("time-step")) {
         time_step = values["time-step"].as<unsigned>();
+    }
+
+    if (values.count("vmin")) {
+        velocity_min = values["vmin"].as<double>();
+    }
+    if (values.count("vmax")) {
+        velocity_max = values["vmax"].as<double>();
     }
 }

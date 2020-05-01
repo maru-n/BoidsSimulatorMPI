@@ -3,21 +3,24 @@
 import sys
 import warnings
 from swarm_util import *
+import argparse
 
-USAGE = """\
-USAGE: check_datafile.py file1 file2 ...\
-"""
+parser = argparse.ArgumentParser(description='check metadata of swarm simulation data file.')
+parser.add_argument('input_files', type=str, nargs='+',
+                    help='swarm simulation data files')
+parser.add_argument('--verbose', '-v', action='store_true')
 
-if len(sys.argv) < 2:
-    print(USAGE)
-    sys.exit()
+args = parser.parse_args()
 
-fnames = sys.argv[1:]
+fnames = args.input_files
 
 for fn in fnames:
     print(fn)
     sdm = SwarmDataManager(fn)
-    print('  N:{} t0:{} step:{}'.format(sdm.N, sdm.t_0, sdm.steps), end='')
+    if args.verbose:
+        print('  N:{} t0:{} step:{}'.format(sdm.N, sdm.t_0, sdm.steps), end='')
+    else:
+        print('  N:{} t0:{} step:{}'.format(sdm.N, sdm.t_0, sdm.steps), end='')
     try:
         sdm.check_metadata()
     except Exception as e:

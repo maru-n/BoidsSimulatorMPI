@@ -175,12 +175,16 @@ def load_data_legacy(filename, time, vel_calc_step=1, end_time=None, time_interv
     if end_time is None and time_interval is None:
         return calc_vel(sdm, time, step=vel_calc_step)
     else:
-        X = np.empty((sdm.N, 6, (end_time-time)//time_interval))
+        #X = np.empty((sdm.N, 6, (end_time-time)//time_interval))
+        X = np.empty(((end_time-time)//time_interval, sdm.N, 3))
+        V = np.empty(((end_time-time)//time_interval, sdm.N, 3))
         for i, t in enumerate(range(time, end_time, time_interval)):
             x, v = calc_vel(sdm, t, step=vel_calc_step)
-            X[:,0:3,i] = x
-            X[:,3:6,i] = v
-        return X
+            #X[:,0:3,i] = x
+            X[i, :,:] = x
+            #X[:,3:6,i] = v
+            V[i, :,:] = v
+        return X, V
 
 def load_pos(filename, time):
     sdm = SwarmDataManager(filename)
@@ -275,14 +279,14 @@ def plt_3d_xc(x, c=None, cmap=plt.cm.prism, plot_class='all', point_size=1, axis
     elif plot_class=='class':
         x1 = x[c==-1]
         c1 = c[c==-1]
-        ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.01)
+        ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.1, s=point_size)
         x0 = x[c!=-1]
         c0 = c[c!=-1]
         ax.scatter3D(x0[:,0], x0[:, 1], x0[:, 2], ',', c=c0, cmap=cmap, s=point_size)
     elif type(plot_class) is int:
         x1 = x[c!=plot_class]
         c1 = c[c!=plot_class]
-        ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.01)
+        ax.scatter3D(x1[:,0], x1[:, 1], x1[:, 2], ',', c='gray', alpha=0.01, s=point_size)
         x0 = x[c==plot_class]
         c0 = c[c==plot_class]
         ax.scatter3D(x0[:,0], x0[:, 1], x0[:, 2], ',', c=c0, cmap=cmap, s=point_size)

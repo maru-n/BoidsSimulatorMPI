@@ -707,7 +707,7 @@ void BoidSimulationMultiNode::update_list_grid(unsigned int buffer_idx) {
     pos_in_grid[2] = local_pos[2] - grid_index_tmp[2][0] * this->GRID_SIZE;
 
     for (int i = 0; i <3; ++i) {
-        if (pos_in_grid[i] < INTERACTION_RANGE) {
+        if (pos_in_grid[i] <= INTERACTION_RANGE) {
             grid_index_tmp[i][1] = (grid_index_tmp[i][0] - 1 + GRID_NUM) % GRID_NUM;
         } else if (pos_in_grid[i] >= this->GRID_SIZE - INTERACTION_RANGE) {
             grid_index_tmp[i][1] = (grid_index_tmp[i][0] + 1) % GRID_NUM;
