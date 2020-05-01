@@ -5,7 +5,7 @@ project(MassiveSwarm)
 
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3")
-set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -lboost_program_options")
+set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS}")
 
 # for Debugger
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
@@ -29,6 +29,12 @@ endif()
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${K_C_CXX_FLAGS}")
 #set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -L/opt/klocal/boost-1.65.1-fujitsu/lib -I/opt/klocal/boost-1.65.1-fujitsu/include")
 
+find_package(Boost REQUIRED program_options)
+if(Boost_FOUND)
+else()
+    message(STATUS "!!! BOOST NOT FOUND !!!")
+endif()
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 
 execute_process(COMMAND brew --prefix libomp
                 OUTPUT_VARIABLE OpenMP_HOME
@@ -60,6 +66,7 @@ if (MPI_CXX_FOUND)
             src/vector3D.cpp
             src/boid_simulation.cpp
             src/boid_simulation_mpi.cpp)
+    target_link_libraries(boidsim_mpi ${Boost_LIBRARIES})
     target_compile_definitions(boidsim_mpi PRIVATE _MPI=1)
     install(TARGETS boidsim_mpi DESTINATION bin)
 
@@ -70,6 +77,7 @@ if (MPI_CXX_FOUND)
             src/vector3D.cpp
             src/boid_simulation.cpp
             src/boid_simulation_mpi_nogrid.cpp)
+    target_link_libraries(boidsim_mpi_nogrid ${Boost_LIBRARIES})            
     target_compile_definitions(boidsim_mpi_nogrid PRIVATE _MPI=1)
     install(TARGETS boidsim_mpi_nogrid DESTINATION bin)
 endif()
@@ -81,6 +89,7 @@ add_executable(boidsim
         src/vector3D.cpp
         src/boid_simulation.cpp
         src/dtype.h)
+target_link_libraries(boidsim ${Boost_LIBRARIES})
 install(TARGETS boidsim DESTINATION bin)
 
 add_executable(boidsim_grid
@@ -90,6 +99,7 @@ add_executable(boidsim_grid
         src/vector3D.cpp
         src/boid_simulation_grid.cpp
         src/dtype.h)
+target_link_libraries(boidsim_grid ${Boost_LIBRARIES})
 install(TARGETS boidsim_grid DESTINATION bin)
 
 

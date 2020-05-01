@@ -52,3 +52,4 @@ testdata
 
 tmp
 settings/*.initdata
+.vscode
