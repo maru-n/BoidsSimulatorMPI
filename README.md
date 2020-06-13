@@ -35,6 +35,14 @@ $ boidsim_grid -s ${setting_file} -o{output_filename} [options]
 $ boidsim_mpi -s ${setting_file} -o{output_filename} [options]
 ```
 
+example
+
+- N = 16384
+- time step 8000
+
+```
+./boidsim_grid -s ../settings/marun2019.ini -o output.ptcl -T 8000 -N 16384 -F 1.0
+```
 
 
 ### options
