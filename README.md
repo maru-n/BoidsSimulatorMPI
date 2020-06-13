@@ -35,6 +35,19 @@ $ boidsim_grid -s ${setting_file} -o{output_filename} [options]
 $ boidsim_mpi -s ${setting_file} -o{output_filename} [options]
 ```
 
+
+
+### options
+-h [ --help ]            help
+-s [ --setting ] arg     simulation setting file with .ini format.
+-o [ --output ] arg      output file.
+
+simulation parameters (have priority over setting file.):
+-N [ --population ] arg  Number of boids.
+-T [ --timestep ] arg    Simulation time step.
+-F [ --field-size ] arg  Size of simulation area.
+
+
 ## Read Datafile on Python
 
 use swarm_util.py on tools directory.
@@ -49,18 +62,6 @@ X, V = su.load_data_legacy(
     time_interval=None,
 )
 ```
-
-### options
--h [ --help ]            help
--s [ --setting ] arg     simulation setting file with .ini format.
--o [ --output ] arg      output file.
-
-simulation parameters (have priority over setting file.):
--N [ --population ] arg  Number of boids.
--T [ --timestep ] arg    Simulation time step.
--F [ --field-size ] arg  Size of simulation area.
-
-
 
 ## Tools
 
