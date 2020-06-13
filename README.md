@@ -46,14 +46,26 @@ example
 
 
 ### options
+
 -h [ --help ]            help
+
 -s [ --setting ] arg     simulation setting file with .ini format.
+
 -o [ --output ] arg      output file.
 
 simulation parameters (have priority over setting file.):
+
 -N [ --population ] arg  Number of boids.
+
 -T [ --timestep ] arg    Simulation time step.
+
 -F [ --field-size ] arg  Size of simulation area.
+
+--vmin
+
+--vmax
+
+velocity limits
 
 
 ## Read Datafile on Python
