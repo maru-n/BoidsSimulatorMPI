@@ -25,9 +25,29 @@ $ cmake -D CMAKE_C_COMPILER=mpifccpx -D CMAKE_CXX_COMPILER=mpiFCCpx ..
 Setting file is norma ini file. Example is setting/examle.ini
 
 ```
+# normal version
 $ boidsim -s ${setting_file} -o{output_filename} [options]
-or
+
+# grid optimized version
+$ boidsim_grid -s ${setting_file} -o{output_filename} [options]
+
+# MPI version
 $ boidsim_mpi -s ${setting_file} -o{output_filename} [options]
+```
+
+## Read Datafile on Python
+
+use swarm_util.py on tools directory.
+
+```python
+import swarm_util as su
+X, V = su.load_data_legacy(
+    filename,
+    time,
+    vel_calc_step=1,
+    end_time=None,
+    time_interval=None,
+)
 ```
 
 ### options
