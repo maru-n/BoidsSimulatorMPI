@@ -35,6 +35,7 @@ Args::Args(int argc, const char **argv)
             ("field-size,F", value<double>(&field_size), "Size of simulation area.")
             ("vmin", value<double>(&velocity_min), "minimum velocity")
             ("vmax", value<double>(&velocity_max), "maximum velocity")
+            ("random-seed", value<int>(&random_seed), "random seed")
             ;
     options.add(sim_options);
 
@@ -146,5 +147,8 @@ Args::Args(int argc, const char **argv)
     }
     if (values.count("vmax")) {
         velocity_max = values["vmax"].as<double>();
+    }
+    if (values.count("random-seed")) {
+        random_seed = values["random-seed"].as<int>();
     }
 }

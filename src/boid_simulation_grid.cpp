@@ -95,6 +95,7 @@ void BoidSimulation::setup(unsigned int number_of_agents,
 void BoidSimulation::init()
 {
     srand(rand_seed);
+    srand48(rand_seed); // delete this for repriacet original
     if (initialization_type == "test") {
         for (int i = 0; i < N; i++) {
             boids[i].position.x = field_size_X * 3 / 8 + drand48() * field_size_X / 4;
